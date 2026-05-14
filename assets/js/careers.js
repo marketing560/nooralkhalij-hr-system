@@ -161,18 +161,18 @@ document.addEventListener('submit', async (event) => {
       const payload = await response.json();
 
       if (!payload.success) {
-        throw new Error(payload?.data?.message || 'Failed to save question.');
+        throw new Error(payload?.data?.database_error || payload?.data?.message || 'Failed to save question.');
       }
 
       if (feedback) {
-        feedback.textContent = payload.data.message;
+        feedback.textContent = payload.data.database_error?payload.data.database_error:payload.data.message;
         feedback.className = 'nak-hr-careers-apply-feedback is-success';
       }
 
       window.location.reload();
     } catch (error) {
       if (feedback) {
-        feedback.textContent = error.message;
+        feedback.textContent = error.database_error?error.database_error:error.message;
         feedback.className = 'nak-hr-careers-apply-feedback is-error';
       }
     } finally {

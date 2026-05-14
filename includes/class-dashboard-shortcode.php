@@ -57,37 +57,40 @@ class Dashboard_Shortcode
                     </div>
 
                     <nav class="nak-hr-dashboard-nav">
-                        <?php foreach ($sections as $section_key => $section_label) : ?>
-                            <a
-                                class="nak-hr-dashboard-nav-link <?php echo $current_section === $section_key ? 'is-active' : ''; ?>"
-                                href="<?php echo esc_url(add_query_arg('nak_section', $section_key, get_permalink() ?: '')); ?>"
-                            >
+                        <?php foreach ($sections as $section_key => $section_label): ?>
+                            <a class="nak-hr-dashboard-nav-link <?php echo $current_section === $section_key ? 'is-active' : ''; ?>"
+                                href="<?php echo esc_url(add_query_arg('nak_section', $section_key, get_permalink() ?: '')); ?>">
                                 <?php echo esc_html($section_label); ?>
                             </a>
                         <?php endforeach; ?>
                     </nav>
 
-                    <a class="nak-hr-action-button nak-hr-action-button--secondary" href="<?php echo esc_url($logout_url); ?>"><?php esc_html_e('Sign out', 'nooralkhalij-hr-system'); ?></a>
+                    <a class="nak-hr-action-button nak-hr-action-button--secondary"
+                        href="<?php echo esc_url($logout_url); ?>"><?php esc_html_e('Sign out', 'nooralkhalij-hr-system'); ?></a>
                 </aside>
 
                 <div class="nak-hr-dashboard-content">
                     <div class="nak-hr-auth-copy">
                         <h2><?php echo esc_html($sections[$current_section]); ?></h2>
-                        <p><?php echo esc_html(sprintf(__('Welcome, %s.', 'nooralkhalij-hr-system'), $user->display_name ?: $user->user_login)); ?></p>
+                        <p><?php echo esc_html(sprintf(__('Welcome, %s.', 'nooralkhalij-hr-system'), $user->display_name ?: $user->user_login)); ?>
+                        </p>
                     </div>
 
                     <div class="nak-hr-dashboard-panel">
-                        <?php if ($current_section === 'general-info') : ?>
+                        <?php if ($current_section === 'general-info'): ?>
                             <ul class="nak-hr-dashboard-list">
-                                <li><strong><?php esc_html_e('Name:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($user->display_name ?: $user->user_login); ?></li>
-                                <li><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($user->user_email); ?></li>
-                                <li><strong><?php esc_html_e('Role:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html(implode(', ', $role_labels)); ?></li>
+                                <li><strong><?php esc_html_e('Name:', 'nooralkhalij-hr-system'); ?></strong>
+                                    <?php echo esc_html($user->display_name ?: $user->user_login); ?></li>
+                                <li><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong>
+                                    <?php echo esc_html($user->user_email); ?></li>
+                                <li><strong><?php esc_html_e('Role:', 'nooralkhalij-hr-system'); ?></strong>
+                                    <?php echo esc_html(implode(', ', $role_labels)); ?></li>
                             </ul>
-                        <?php elseif ($current_section === 'infinity-wiki') : ?>
+                        <?php elseif ($current_section === 'infinity-wiki'): ?>
                             <?php self::render_infinity_wiki(); ?>
-                        <?php elseif ($current_section === 'careers' && $is_master) : ?>
+                        <?php elseif ($current_section === 'careers' && $is_master): ?>
                             <?php self::render_careers(); ?>
-                        <?php else : ?>
+                        <?php else: ?>
                             <div class="nak-hr-dashboard-empty">
                                 <h3><?php echo esc_html($sections[$current_section]); ?></h3>
                                 <p><?php esc_html_e('This section is ready and currently blank.', 'nooralkhalij-hr-system'); ?></p>
@@ -142,34 +145,33 @@ class Dashboard_Shortcode
         <div class="nak-hr-wiki-toolbar">
             <form method="get" class="nak-hr-inline-search">
                 <input type="hidden" name="nak_section" value="infinity-wiki">
-                <input type="search" name="wiki_search" value="<?php echo esc_attr($search); ?>" placeholder="<?php esc_attr_e('Search question text', 'nooralkhalij-hr-system'); ?>">
-                <button type="submit" class="nak-hr-action-button"><?php esc_html_e('Search', 'nooralkhalij-hr-system'); ?></button>
-                <?php if ($search !== '') : ?>
-                    <a class="nak-hr-action-button nak-hr-action-button--secondary" href="<?php echo esc_url(add_query_arg('nak_section', 'infinity-wiki', get_permalink() ?: '')); ?>"><?php esc_html_e('Clear', 'nooralkhalij-hr-system'); ?></a>
+                <input type="search" name="wiki_search" value="<?php echo esc_attr($search); ?>"
+                    placeholder="<?php esc_attr_e('Search question text', 'nooralkhalij-hr-system'); ?>">
+                <button type="submit"
+                    class="nak-hr-action-button"><?php esc_html_e('Search', 'nooralkhalij-hr-system'); ?></button>
+                <?php if ($search !== ''): ?>
+                    <a class="nak-hr-action-button nak-hr-action-button--secondary"
+                        href="<?php echo esc_url(add_query_arg('nak_section', 'infinity-wiki', get_permalink() ?: '')); ?>"><?php esc_html_e('Clear', 'nooralkhalij-hr-system'); ?></a>
                 <?php endif; ?>
             </form>
 
-            <?php if ($is_master) : ?>
-                <button
-                    type="button"
-                    class="nak-hr-action-button"
-                    data-wiki-open
-                    data-ajax-url="<?php echo esc_url($ajax_url); ?>"
-                    data-nonce="<?php echo esc_attr($modal_nonce); ?>"
-                >
+            <?php if ($is_master): ?>
+                <button type="button" class="nak-hr-action-button" data-wiki-open data-ajax-url="<?php echo esc_url($ajax_url); ?>"
+                    data-nonce="<?php echo esc_attr($modal_nonce); ?>">
                     <?php esc_html_e('Add Question', 'nooralkhalij-hr-system'); ?>
                 </button>
             <?php endif; ?>
         </div>
 
-        <?php if (empty($items)) : ?>
+        <?php if (empty($items)): ?>
             <div class="nak-hr-dashboard-empty">
                 <h3><?php esc_html_e('No questions found', 'nooralkhalij-hr-system'); ?></h3>
-                <p><?php echo esc_html($search !== '' ? __('No questions matched your search.', 'nooralkhalij-hr-system') : __('There are no questions yet.', 'nooralkhalij-hr-system')); ?></p>
+                <p><?php echo esc_html($search !== '' ? __('No questions matched your search.', 'nooralkhalij-hr-system') : __('There are no questions yet.', 'nooralkhalij-hr-system')); ?>
+                </p>
             </div>
-        <?php else : ?>
+        <?php else: ?>
             <div class="nak-hr-wiki-list" data-wiki-list>
-                <?php foreach ($items as $item) : ?>
+                <?php foreach ($items as $item): ?>
                     <?php
                     $choices = json_decode((string) $item->choices, true);
                     $answer = '';
@@ -180,34 +182,28 @@ class Dashboard_Shortcode
                     ?>
                     <div class="nak-hr-wiki-item" data-question-id="<?php echo esc_attr($item->id); ?>">
                         <div class="nak-hr-wiki-item-head">
-                            <div class="nak-hr-wiki-meta"><?php echo esc_html(Plugin::get_employee_roles()[$item->role] ?? $item->role); ?></div>
-                            <?php if ($is_master) : ?>
+                            <div class="nak-hr-wiki-meta">
+                                <?php echo esc_html(Plugin::get_employee_roles()[$item->role] ?? $item->role); ?></div>
+                            <?php if ($is_master): ?>
                                 <div class="nak-hr-wiki-actions">
-                                    <button
-                                        type="button"
-                                        class="nak-hr-link-button"
-                                        data-wiki-open
+                                    <button type="button" class="nak-hr-link-button" data-wiki-open
                                         data-question-id="<?php echo esc_attr($item->id); ?>"
                                         data-ajax-url="<?php echo esc_url($ajax_url); ?>"
-                                        data-nonce="<?php echo esc_attr($modal_nonce); ?>"
-                                    >
+                                        data-nonce="<?php echo esc_attr($modal_nonce); ?>">
                                         <?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?>
                                     </button>
-                                    <button
-                                        type="button"
-                                        class="nak-hr-link-button nak-hr-link-button--danger"
-                                        data-wiki-delete
+                                    <button type="button" class="nak-hr-link-button nak-hr-link-button--danger" data-wiki-delete
                                         data-question-id="<?php echo esc_attr($item->id); ?>"
                                         data-ajax-url="<?php echo esc_url($ajax_url); ?>"
-                                        data-nonce="<?php echo esc_attr($modal_nonce); ?>"
-                                    >
+                                        data-nonce="<?php echo esc_attr($modal_nonce); ?>">
                                         <?php esc_html_e('Delete', 'nooralkhalij-hr-system'); ?>
                                     </button>
                                 </div>
                             <?php endif; ?>
                         </div>
                         <h3><?php echo esc_html($item->question); ?></h3>
-                        <p><strong><?php esc_html_e('Answer:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($answer); ?></p>
+                        <p><strong><?php esc_html_e('Answer:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($answer); ?>
+                        </p>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -226,9 +222,9 @@ class Dashboard_Shortcode
                 'current' => $current_page,
                 'type' => 'plain',
             ]);
-            ?>
+        ?>
         <?php endif; ?>
-        <?php
+    <?php
     }
 
     private static function render_careers(): void
@@ -268,36 +264,40 @@ class Dashboard_Shortcode
             ], get_permalink() ?: '')); ?>"><?php esc_html_e('Add Position', 'nooralkhalij-hr-system'); ?></a>
         </div>
 
-        <?php if (empty($items)) : ?>
+        <?php if (empty($items)): ?>
             <div class="nak-hr-dashboard-empty">
                 <h3><?php esc_html_e('No positions found', 'nooralkhalij-hr-system'); ?></h3>
                 <p><?php esc_html_e('There are no career positions yet.', 'nooralkhalij-hr-system'); ?></p>
             </div>
-        <?php else : ?>
+        <?php else: ?>
             <div class="nak-hr-wiki-list">
-                <?php foreach ($items as $item) : ?>
+                <?php foreach ($items as $item): ?>
                     <div class="nak-hr-wiki-item">
                         <div class="nak-hr-wiki-item-head">
                             <div class="nak-hr-wiki-meta <?php echo $item->is_active ? '' : 'nak-hr-wiki-meta--inactive'; ?>">
                                 <?php echo esc_html($item->is_active ? __('Active', 'nooralkhalij-hr-system') : __('Inactive', 'nooralkhalij-hr-system')); ?>
                             </div>
                             <div class="nak-hr-wiki-actions">
-                                <a href="<?php echo esc_url(add_query_arg([
-                                    'nak_section' => 'careers',
-                                    'career_edit' => $item->id,
-                                    'career_form' => 1,
-                                ], get_permalink() ?: '')); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a>
+                                <a
+                                    href="<?php echo esc_url(add_query_arg([
+                                        'nak_section' => 'careers',
+                                        'career_edit' => $item->id,
+                                        'career_form' => 1,
+                                    ], get_permalink() ?: '')); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a>
                                 <form method="post">
                                     <?php wp_nonce_field('nak_hr_career_action', 'nak_hr_career_nonce'); ?>
                                     <input type="hidden" name="career_action" value="toggle">
                                     <input type="hidden" name="career_id" value="<?php echo esc_attr($item->id); ?>">
-                                    <button type="submit" class="nak-hr-link-button"><?php echo esc_html($item->is_active ? __('Deactivate', 'nooralkhalij-hr-system') : __('Activate', 'nooralkhalij-hr-system')); ?></button>
+                                    <button type="submit"
+                                        class="nak-hr-link-button"><?php echo esc_html($item->is_active ? __('Deactivate', 'nooralkhalij-hr-system') : __('Activate', 'nooralkhalij-hr-system')); ?></button>
                                 </form>
-                                <form method="post" onsubmit="return confirm('<?php echo esc_js(__('Delete this position?', 'nooralkhalij-hr-system')); ?>');">
+                                <form method="post"
+                                    onsubmit="return confirm('<?php echo esc_js(__('Delete this position?', 'nooralkhalij-hr-system')); ?>');">
                                     <?php wp_nonce_field('nak_hr_career_action', 'nak_hr_career_nonce'); ?>
                                     <input type="hidden" name="career_action" value="delete">
                                     <input type="hidden" name="career_id" value="<?php echo esc_attr($item->id); ?>">
-                                    <button type="submit" class="nak-hr-link-button nak-hr-link-button--danger"><?php esc_html_e('Delete', 'nooralkhalij-hr-system'); ?></button>
+                                    <button type="submit"
+                                        class="nak-hr-link-button nak-hr-link-button--danger"><?php esc_html_e('Delete', 'nooralkhalij-hr-system'); ?></button>
                                 </form>
                             </div>
                         </div>
@@ -307,7 +307,7 @@ class Dashboard_Shortcode
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
-        <?php
+    <?php
     }
 
     public static function ajax_get_wiki_form(): void
@@ -419,9 +419,13 @@ class Dashboard_Shortcode
         $inserted = $wpdb->insert($table_name, $data, ['%s', '%s', '%s', '%d']);
 
         if (!$inserted) {
-            wp_send_json_error(['message' => __('Failed to add the question.', 'nooralkhalij-hr-system')], 500);
-        }
 
+            wp_send_json_error([
+                'message' => __('Failed to add the question.', 'nooralkhalij-hr-system'),
+                'database_error' => $wpdb->last_error,
+                'last_query' => $wpdb->last_query,
+            ], 500);
+        }
         wp_send_json_success(['message' => __('Question added successfully.', 'nooralkhalij-hr-system')]);
     }
 
@@ -471,20 +475,24 @@ class Dashboard_Shortcode
         if ($action === 'delete' && $career_id > 0) {
             $deleted = $wpdb->delete($table_name, ['id' => $career_id], ['%d']);
 
-            return [[
-                'type' => $deleted ? 'success' : 'error',
-                'text' => $deleted ? __('Position deleted successfully.', 'nooralkhalij-hr-system') : __('Failed to delete the position.', 'nooralkhalij-hr-system'),
-            ]];
+            return [
+                [
+                    'type' => $deleted ? 'success' : 'error',
+                    'text' => $deleted ? __('Position deleted successfully.', 'nooralkhalij-hr-system') : __('Failed to delete the position.', 'nooralkhalij-hr-system'),
+                ]
+            ];
         }
 
         if ($action === 'toggle' && $career_id > 0) {
             $current = $wpdb->get_var($wpdb->prepare("SELECT is_active FROM {$table_name} WHERE id = %d", $career_id));
             $updated = $wpdb->update($table_name, ['is_active' => $current ? 0 : 1], ['id' => $career_id], ['%d'], ['%d']);
 
-            return [[
-                'type' => $updated !== false ? 'success' : 'error',
-                'text' => $updated !== false ? __('Position status updated.', 'nooralkhalij-hr-system') : __('Failed to update the position status.', 'nooralkhalij-hr-system'),
-            ]];
+            return [
+                [
+                    'type' => $updated !== false ? 'success' : 'error',
+                    'text' => $updated !== false ? __('Position status updated.', 'nooralkhalij-hr-system') : __('Failed to update the position status.', 'nooralkhalij-hr-system'),
+                ]
+            ];
         }
 
         if ($action !== 'save') {
@@ -520,18 +528,22 @@ class Dashboard_Shortcode
         if ($career_id > 0) {
             $updated = $wpdb->update($table_name, $data, ['id' => $career_id], ['%s', '%s', '%d'], ['%d']);
 
-            return [[
-                'type' => $updated !== false ? 'success' : 'error',
-                'text' => $updated !== false ? __('Position updated successfully.', 'nooralkhalij-hr-system') : __('Failed to update the position.', 'nooralkhalij-hr-system'),
-            ]];
+            return [
+                [
+                    'type' => $updated !== false ? 'success' : 'error',
+                    'text' => $updated !== false ? __('Position updated successfully.', 'nooralkhalij-hr-system') : __('Failed to update the position.', 'nooralkhalij-hr-system'),
+                ]
+            ];
         }
 
         $inserted = $wpdb->insert($table_name, $data, ['%s', '%s', '%d']);
 
-        return [[
-            'type' => $inserted ? 'success' : 'error',
-            'text' => $inserted ? __('Position added successfully.', 'nooralkhalij-hr-system') : __('Failed to add the position.', 'nooralkhalij-hr-system'),
-        ]];
+        return [
+            [
+                'type' => $inserted ? 'success' : 'error',
+                'text' => $inserted ? __('Position added successfully.', 'nooralkhalij-hr-system') : __('Failed to add the position.', 'nooralkhalij-hr-system'),
+            ]
+        ];
     }
 
     private static function render_wiki_form(?object $editing_item): void
@@ -554,7 +566,8 @@ class Dashboard_Shortcode
         ?>
         <div class="nak-hr-careers-modal__content nak-hr-wiki-modal-content">
             <button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button>
-            <h3><?php echo esc_html($editing_item ? __('Edit Question', 'nooralkhalij-hr-system') : __('Add Question', 'nooralkhalij-hr-system')); ?></h3>
+            <h3><?php echo esc_html($editing_item ? __('Edit Question', 'nooralkhalij-hr-system') : __('Add Question', 'nooralkhalij-hr-system')); ?>
+            </h3>
 
             <form class="nak-hr-auth-form" data-wiki-form>
                 <input type="hidden" name="action" value="nak_hr_save_wiki_question">
@@ -565,7 +578,7 @@ class Dashboard_Shortcode
                     <span><?php esc_html_e('Role', 'nooralkhalij-hr-system'); ?></span>
                     <select name="role" required>
                         <option value=""><?php esc_html_e('Select role', 'nooralkhalij-hr-system'); ?></option>
-                        <?php foreach (Plugin::get_employee_roles() as $role_key => $role_label) : ?>
+                        <?php foreach (Plugin::get_employee_roles() as $role_key => $role_label): ?>
                             <option value="<?php echo esc_attr($role_key); ?>" <?php selected($defaults['role'], $role_key, false); ?>><?php echo esc_html($role_label); ?></option>
                         <?php endforeach; ?>
                     </select>
@@ -577,7 +590,7 @@ class Dashboard_Shortcode
                 </label>
 
                 <div class="nak-hr-grid">
-                    <?php foreach ($defaults['choices'] as $index => $choice) : ?>
+                    <?php foreach ($defaults['choices'] as $index => $choice): ?>
                         <label>
                             <span><?php echo esc_html(sprintf(__('Choice %d', 'nooralkhalij-hr-system'), $index + 1)); ?></span>
                             <input type="text" name="choices[]" value="<?php echo esc_attr($choice); ?>" <?php echo $index < 2 ? 'required' : ''; ?>>
@@ -588,16 +601,19 @@ class Dashboard_Shortcode
                 <label>
                     <span><?php esc_html_e('Correct answer', 'nooralkhalij-hr-system'); ?></span>
                     <select name="answer_key" required>
-                        <?php foreach ($defaults['choices'] as $index => $choice) : ?>
-                            <option value="<?php echo esc_attr((string) $index); ?>" <?php selected((int) $defaults['answer_key'], $index, false); ?>><?php echo esc_html(sprintf(__('Choice %d', 'nooralkhalij-hr-system'), $index + 1)); ?></option>
+                        <?php foreach ($defaults['choices'] as $index => $choice): ?>
+                            <option value="<?php echo esc_attr((string) $index); ?>" <?php selected((int) $defaults['answer_key'], $index, false); ?>>
+                                <?php echo esc_html(sprintf(__('Choice %d', 'nooralkhalij-hr-system'), $index + 1)); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </label>
 
                 <div class="nak-hr-careers-apply-feedback" data-wiki-feedback></div>
                 <div class="nak-hr-modal-actions">
-                    <button type="submit"><?php echo esc_html($editing_item ? __('Update Question', 'nooralkhalij-hr-system') : __('Save Question', 'nooralkhalij-hr-system')); ?></button>
-                    <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary" data-careers-close><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></button>
+                    <button
+                        type="submit"><?php echo esc_html($editing_item ? __('Update Question', 'nooralkhalij-hr-system') : __('Save Question', 'nooralkhalij-hr-system')); ?></button>
+                    <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary"
+                        data-careers-close><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></button>
                 </div>
             </form>
         </div>
@@ -616,7 +632,8 @@ class Dashboard_Shortcode
         <div class="nak-hr-modal-backdrop">
             <div class="nak-hr-modal-card">
                 <div class="nak-hr-modal-head">
-                    <h3><?php echo esc_html($editing_item ? __('Edit Position', 'nooralkhalij-hr-system') : __('Add Position', 'nooralkhalij-hr-system')); ?></h3>
+                    <h3><?php echo esc_html($editing_item ? __('Edit Position', 'nooralkhalij-hr-system') : __('Add Position', 'nooralkhalij-hr-system')); ?>
+                    </h3>
                     <a href="<?php echo esc_url(add_query_arg('nak_section', 'careers', get_permalink() ?: '')); ?>">&times;</a>
                 </div>
 
@@ -632,7 +649,8 @@ class Dashboard_Shortcode
 
                     <label>
                         <span><?php esc_html_e('Details', 'nooralkhalij-hr-system'); ?></span>
-                        <textarea name="details" rows="6" required><?php echo esc_textarea((string) $defaults['details']); ?></textarea>
+                        <textarea name="details" rows="6"
+                            required><?php echo esc_textarea((string) $defaults['details']); ?></textarea>
                     </label>
 
                     <label class="nak-hr-checkbox-row">
@@ -641,8 +659,10 @@ class Dashboard_Shortcode
                     </label>
 
                     <div class="nak-hr-modal-actions">
-                        <button type="submit"><?php echo esc_html($editing_item ? __('Update Position', 'nooralkhalij-hr-system') : __('Save Position', 'nooralkhalij-hr-system')); ?></button>
-                        <a class="nak-hr-action-button nak-hr-action-button--secondary" href="<?php echo esc_url(add_query_arg('nak_section', 'careers', get_permalink() ?: '')); ?>"><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></a>
+                        <button
+                            type="submit"><?php echo esc_html($editing_item ? __('Update Position', 'nooralkhalij-hr-system') : __('Save Position', 'nooralkhalij-hr-system')); ?></button>
+                        <a class="nak-hr-action-button nak-hr-action-button--secondary"
+                            href="<?php echo esc_url(add_query_arg('nak_section', 'careers', get_permalink() ?: '')); ?>"><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></a>
                     </div>
                 </form>
             </div>
