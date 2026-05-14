@@ -83,6 +83,8 @@ class Dashboard_Shortcode
                             <?php require NAK_HR_PLUGIN_DIR . 'includes/dashboard-tabs/leaves-vacations.php'; ?>
                         <?php elseif ($current_section === 'infinity-wiki') : ?>
                             <?php self::render_infinity_wiki(); ?>
+                        <?php elseif ($current_section === 'suggestions-more') : ?>
+                            <?php require NAK_HR_PLUGIN_DIR . 'includes/dashboard-tabs/suggestions-more.php'; ?>
                         <?php elseif ($current_section === 'careers' && $is_master) : ?>
                             <?php self::render_careers(); ?>
                         <?php else : ?>
