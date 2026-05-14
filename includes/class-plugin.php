@@ -11,6 +11,8 @@ require_once NAK_HR_PLUGIN_DIR . 'includes/class-signup-shortcode.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-login-shortcode.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-auth-gateway-shortcode.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-dashboard-shortcode.php';
+require_once NAK_HR_PLUGIN_DIR . 'includes/class-dashboard-careers-tab.php';
+require_once NAK_HR_PLUGIN_DIR . 'includes/class-dashboard-infinity-wiki-tab.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-careers-shortcode.php';
 
 class Plugin
@@ -123,9 +125,9 @@ class Plugin
         add_action('wp_ajax_nopriv_nak_hr_get_career', [self::class, 'ajax_get_career']);
         add_action('wp_ajax_nak_hr_apply_career', [self::class, 'ajax_apply_career']);
         add_action('wp_ajax_nopriv_nak_hr_apply_career', [self::class, 'ajax_apply_career']);
-        add_action('wp_ajax_nak_hr_get_wiki_form', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_wiki_form']);
-        add_action('wp_ajax_nak_hr_save_wiki_question', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_wiki_question']);
-        add_action('wp_ajax_nak_hr_delete_wiki_question', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_delete_wiki_question']);
+        add_action('wp_ajax_nak_hr_get_wiki_form', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Infinity_Wiki_Tab', 'ajax_get_form']);
+        add_action('wp_ajax_nak_hr_save_wiki_question', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Infinity_Wiki_Tab', 'ajax_save_question']);
+        add_action('wp_ajax_nak_hr_delete_wiki_question', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Infinity_Wiki_Tab', 'ajax_delete_question']);
         add_action('wp_ajax_nak_hr_get_career_form', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_career_form']);
         add_action('wp_ajax_nak_hr_save_career', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_career']);
         add_action('wp_ajax_nak_hr_toggle_career', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_toggle_career']);
