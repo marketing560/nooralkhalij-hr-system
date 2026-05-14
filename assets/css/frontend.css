@@ -1,0 +1,145 @@
+:root {
+  --nak-bg: #f5f7fb;
+  --nak-surface: #ffffff;
+  --nak-surface-strong: #0f172a;
+  --nak-text: #0f172a;
+  --nak-text-soft: #475569;
+  --nak-border: rgba(148, 163, 184, 0.22);
+  --nak-primary: #0ea5a4;
+  --nak-primary-dark: #0b7c7b;
+  --nak-success-bg: #ecfdf5;
+  --nak-success-text: #166534;
+  --nak-error-bg: #fef2f2;
+  --nak-error-text: #b91c1c;
+  --nak-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+}
+
+.nak-hr-auth-shell {
+  padding: 40px 16px;
+  background:
+    radial-gradient(circle at top right, rgba(14, 165, 164, 0.18), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, var(--nak-bg) 100%);
+}
+
+.nak-hr-auth-card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid var(--nak-border);
+  box-shadow: var(--nak-shadow);
+}
+
+.nak-hr-auth-copy {
+  margin-bottom: 24px;
+}
+
+.nak-hr-auth-eyebrow {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(14, 165, 164, 0.1);
+  color: var(--nak-primary-dark);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.nak-hr-auth-copy h2 {
+  margin: 0 0 10px;
+  color: var(--nak-text);
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.1;
+}
+
+.nak-hr-auth-copy p {
+  margin: 0;
+  color: var(--nak-text-soft);
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.nak-hr-alert {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nak-hr-alert--success {
+  background: var(--nak-success-bg);
+  color: var(--nak-success-text);
+}
+
+.nak-hr-alert--error {
+  background: var(--nak-error-bg);
+  color: var(--nak-error-text);
+}
+
+.nak-hr-auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.nak-hr-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.nak-hr-auth-form label {
+  display: grid;
+  gap: 8px;
+  color: var(--nak-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.nak-hr-auth-form input {
+  min-height: 52px;
+  padding: 0 16px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--nak-text);
+  font-size: 15px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nak-hr-auth-form input:focus {
+  outline: none;
+  border-color: var(--nak-primary);
+  box-shadow: 0 0 0 4px rgba(14, 165, 164, 0.12);
+}
+
+.nak-hr-auth-form button {
+  min-height: 54px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--nak-primary) 0%, var(--nak-primary-dark) 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 18px 32px rgba(14, 165, 164, 0.24);
+}
+
+.nak-hr-auth-form button:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+  .nak-hr-auth-card {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .nak-hr-grid {
+    grid-template-columns: 1fr;
+  }
+}
