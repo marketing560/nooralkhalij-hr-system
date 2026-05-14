@@ -19,6 +19,8 @@ define('NAK_HR_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-plugin.php';
 
+register_activation_hook(__FILE__, ['\\NoorAlKhalij\\HRSystem\\Plugin', 'activate']);
+
 function nak_hr_boot_plugin(): void
 {
     \NoorAlKhalij\HRSystem\Plugin::instance();

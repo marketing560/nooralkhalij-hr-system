@@ -165,6 +165,7 @@ class Signup_Shortcode
             'first_name' => $first_name,
             'last_name' => $last_name,
             'display_name' => trim($first_name . ' ' . $last_name),
+            'role' => 'nak_employee',
         ]);
 
         return [[

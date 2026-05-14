@@ -22,9 +22,26 @@ class Plugin
         return self::$instance;
     }
 
+    public static function activate(): void
+    {
+        self::register_roles();
+    }
+
+    public static function register_roles(): void
+    {
+        add_role(
+            'nak_employee',
+            __('Employee', 'nooralkhalij-hr-system'),
+            [
+                'read' => true,
+            ]
+        );
+    }
+
     private function __construct()
     {
         add_action('init', [$this, 'register_shortcodes']);
+        add_action('init', [self::class, 'register_roles']);
         add_action('admin_menu', [$this, 'register_admin_menu']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
     }

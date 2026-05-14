@@ -33,6 +33,10 @@ class Admin
         <div class="wrap">
             <h1><?php esc_html_e('Noor Al Khalij HR System', 'nooralkhalij-hr-system'); ?></h1>
             <p><?php esc_html_e('Use these shortcodes on any page to render plugin features.', 'nooralkhalij-hr-system'); ?></p>
+            <p>
+                <strong><?php esc_html_e('Employee role key:', 'nooralkhalij-hr-system'); ?></strong>
+                <code>nak_employee</code>
+            </p>
 
             <table class="widefat striped" style="max-width: 980px; margin-top: 20px;">
                 <thead>
