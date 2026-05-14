@@ -53,6 +53,10 @@ class Admin
                 'tag' => '[nak_hr_dashboard]',
                 'description' => __('Displays the logged-in user dashboard only.', 'nooralkhalij-hr-system'),
             ],
+            [
+                'tag' => '[nak_hr_careers]',
+                'description' => __('Displays active career positions as public cards with server-side pagination.', 'nooralkhalij-hr-system'),
+            ],
         ];
         ?>
         <div class="wrap">

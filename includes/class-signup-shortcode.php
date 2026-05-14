@@ -78,7 +78,7 @@ class Signup_Shortcode
                         <select name="nak_hr_signup[role]" required>
                             <option value=""><?php esc_html_e('Select department', 'nooralkhalij-hr-system'); ?></option>
                             <?php foreach (Plugin::get_employee_roles() as $role_key => $role_label) : ?>
-                                <?php if ($role_key === 'nak_employee') { continue; } ?>
+                                <?php if (in_array($role_key, ['nak_employee', 'nak_master'], true)) { continue; } ?>
                                 <option value="<?php echo esc_attr($role_key); ?>" <?php selected($defaults['role'], $role_key, false); ?>><?php echo esc_html($role_label); ?></option>
                             <?php endforeach; ?>
                         </select>
@@ -154,7 +154,7 @@ class Signup_Shortcode
         }
 
         $allowed_roles = Plugin::get_employee_roles();
-        unset($allowed_roles['nak_employee']);
+        unset($allowed_roles['nak_employee'], $allowed_roles['nak_master']);
 
         if ($role !== '' && !array_key_exists($role, $allowed_roles)) {
             $errors[] = __('Please choose a valid department.', 'nooralkhalij-hr-system');
