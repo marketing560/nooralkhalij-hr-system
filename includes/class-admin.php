@@ -46,6 +46,10 @@ class Admin
                 'description' => __('Displays login/signup when logged out, and dashboard/sign out when logged in.', 'nooralkhalij-hr-system'),
             ],
             [
+                'tag' => '[nak_hr_auth variant="menu"]',
+                'description' => __('Displays a compact menu button that links to login or My Account.', 'nooralkhalij-hr-system'),
+            ],
+            [
                 'tag' => '[nak_hr_dashboard]',
                 'description' => __('Displays the logged-in user dashboard only.', 'nooralkhalij-hr-system'),
             ],

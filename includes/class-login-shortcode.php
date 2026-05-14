@@ -109,7 +109,7 @@ class Login_Shortcode
             ]];
         }
 
-        wp_safe_redirect(home_url('/'));
+        wp_safe_redirect(home_url('/my-account'));
         exit;
     }
 }

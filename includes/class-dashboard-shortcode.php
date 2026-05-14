@@ -20,7 +20,8 @@ class Dashboard_Shortcode
         wp_enqueue_style('nak-hr-frontend');
 
         if (!is_user_logged_in()) {
-            return '<div class="nak-hr-auth-shell"><div class="nak-hr-auth-card"><div class="nak-hr-alert nak-hr-alert--error">' . esc_html__('Please log in to access your dashboard.', 'nooralkhalij-hr-system') . '</div></div></div>';
+            wp_safe_redirect(home_url('/login'));
+            exit;
         }
 
         $user = wp_get_current_user();
@@ -30,6 +31,7 @@ class Dashboard_Shortcode
             'general-info' => __('General Info', 'nooralkhalij-hr-system'),
             'leaves-vacations' => __('Leaves and Vacations', 'nooralkhalij-hr-system'),
             'infinity-wiki' => __('Infinity Wiki', 'nooralkhalij-hr-system'),
+            'suggestions-more' => __('Suggestions and More', 'nooralkhalij-hr-system'),
         ];
         $current_section = sanitize_key($_GET['nak_section'] ?? 'general-info');
 

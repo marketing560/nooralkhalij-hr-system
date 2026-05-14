@@ -15,14 +15,22 @@ class Auth_Gateway_Shortcode
         add_shortcode(self::SHORTCODE, [self::class, 'render']);
     }
 
-    public static function render(): string
+    public static function render($atts = []): string
     {
+        $atts = shortcode_atts([
+            'variant' => 'card',
+        ], $atts, self::SHORTCODE);
+
         wp_enqueue_style('nak-hr-frontend');
+
+        if ($atts['variant'] === 'menu') {
+            return self::render_menu_button();
+        }
 
         if (is_user_logged_in()) {
             $user = wp_get_current_user();
             $logout_url = wp_logout_url(get_permalink() ?: home_url('/'));
-            $dashboard_url = admin_url('admin.php?page=nak-hr-employees');
+            $dashboard_url = home_url('/my-account');
 
             ob_start();
             ?>
@@ -45,7 +53,7 @@ class Auth_Gateway_Shortcode
         }
 
         $login_url = home_url('/login');
-        $signup_url = home_url('/signup');
+        $signup_url = home_url('/sign-up');
 
         ob_start();
         ?>
@@ -65,5 +73,17 @@ class Auth_Gateway_Shortcode
         <?php
 
         return (string) ob_get_clean();
+    }
+
+    private static function render_menu_button(): string
+    {
+        if (is_user_logged_in()) {
+            return '<a class="nak-hr-menu-button" href="' . esc_url(home_url('/my-account')) . '">' . esc_html__('My Account', 'nooralkhalij-hr-system') . '</a>';
+        }
+
+        return '<span class="nak-hr-menu-button-group">'
+            . '<a class="nak-hr-menu-button" href="' . esc_url(home_url('/login')) . '">' . esc_html__('Login', 'nooralkhalij-hr-system') . '</a>'
+            . '<a class="nak-hr-menu-button nak-hr-menu-button--secondary" href="' . esc_url(home_url('/sign-up')) . '">' . esc_html__('Sign up', 'nooralkhalij-hr-system') . '</a>'
+            . '</span>';
     }
 }

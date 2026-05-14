@@ -60,6 +60,7 @@ class Plugin
         add_action('init', [self::class, 'register_roles']);
         add_action('admin_menu', [$this, 'register_admin_menu']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
+        add_action('after_setup_theme', [$this, 'maybe_hide_admin_bar']);
     }
 
     public function register_shortcodes(): void
@@ -83,5 +84,19 @@ class Plugin
             [],
             NAK_HR_VERSION
         );
+    }
+
+    public function maybe_hide_admin_bar(): void
+    {
+        if (!is_user_logged_in() || current_user_can('manage_options')) {
+            return;
+        }
+
+        $user = wp_get_current_user();
+        $employee_roles = array_keys(self::get_employee_roles());
+
+        if (!empty(array_intersect($employee_roles, (array) $user->roles))) {
+            show_admin_bar(false);
+        }
     }
 }

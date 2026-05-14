@@ -163,6 +163,33 @@
   box-shadow: none;
 }
 
+.nak-hr-menu-button-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nak-hr-menu-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--nak-primary) 0%, var(--nak-primary-dark) 100%);
+  color: #fff;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nak-hr-menu-button--secondary {
+  background: #fff;
+  color: var(--nak-text);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
 .nak-hr-dashboard-layout {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
