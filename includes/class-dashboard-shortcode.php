@@ -78,11 +78,7 @@ class Dashboard_Shortcode
 
                     <div class="nak-hr-dashboard-panel">
                         <?php if ($current_section === 'general-info') : ?>
-                            <ul class="nak-hr-dashboard-list">
-                                <li><strong><?php esc_html_e('Name:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($user->display_name ?: $user->user_login); ?></li>
-                                <li><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($user->user_email); ?></li>
-                                <li><strong><?php esc_html_e('Role:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html(implode(', ', $role_labels)); ?></li>
-                            </ul>
+                            <?php require NAK_HR_PLUGIN_DIR . 'includes/dashboard-tabs/general-info.php'; ?>
                         <?php elseif ($current_section === 'infinity-wiki') : ?>
                             <?php self::render_infinity_wiki(); ?>
                         <?php elseif ($current_section === 'careers' && $is_master) : ?>
