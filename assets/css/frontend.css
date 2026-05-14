@@ -14,16 +14,25 @@
   --nak-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
 }
 
+.entry-content .nak-hr-auth-shell,
+.site-main .nak-hr-auth-shell,
+.wp-block-post-content .nak-hr-auth-shell,
 .nak-hr-auth-shell {
-  padding: 40px 16px;
-  background:
-    radial-gradient(circle at top right, rgba(14, 165, 164, 0.18), transparent 28%),
-    linear-gradient(180deg, #f8fbff 0%, var(--nak-bg) 100%);
+  width: 95%;
+  max-width: 95%;
+  margin: 0 auto !important;
+  padding: 40px 0 !important;
+  background: transparent;
 }
 
+.entry-content .nak-hr-auth-card,
+.site-main .nak-hr-auth-card,
+.wp-block-post-content .nak-hr-auth-card,
 .nak-hr-auth-card {
-  max-width: 760px;
-  margin: 0 auto;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  box-sizing: border-box;
   padding: 32px;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.96);
@@ -99,7 +108,8 @@
   font-weight: 600;
 }
 
-.nak-hr-auth-form input {
+.nak-hr-auth-form input,
+.nak-hr-auth-form select {
   min-height: 52px;
   padding: 0 16px;
   border: 1px solid rgba(148, 163, 184, 0.35);
@@ -110,13 +120,18 @@
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.nak-hr-auth-form input:focus {
+.nak-hr-auth-form input:focus,
+.nak-hr-auth-form select:focus {
   outline: none;
   border-color: var(--nak-primary);
   box-shadow: 0 0 0 4px rgba(14, 165, 164, 0.12);
 }
 
-.nak-hr-auth-form button {
+.nak-hr-auth-form button,
+.nak-hr-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 54px;
   border: 0;
   border-radius: 14px;
@@ -127,10 +142,105 @@
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 18px 32px rgba(14, 165, 164, 0.24);
+  text-decoration: none;
+  padding: 0 18px;
 }
 
-.nak-hr-auth-form button:hover {
+.nak-hr-auth-form button:hover,
+.nak-hr-action-button:hover {
   transform: translateY(-1px);
+}
+
+.nak-hr-action-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.nak-hr-action-button--secondary {
+  background: #fff;
+  color: var(--nak-text);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: none;
+}
+
+.nak-hr-dashboard-layout {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.nak-hr-dashboard-sidebar {
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 22px;
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.nak-hr-dashboard-sidebar-head h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.nak-hr-dashboard-sidebar-head p {
+  margin: 0;
+  color: var(--nak-text-soft);
+}
+
+.nak-hr-dashboard-nav {
+  display: grid;
+  gap: 10px;
+}
+
+.nak-hr-dashboard-nav-link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 14px;
+  color: var(--nak-text);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+
+.nak-hr-dashboard-nav-link.is-active {
+  border-color: rgba(14, 165, 164, 0.24);
+  background: rgba(14, 165, 164, 0.12);
+  color: var(--nak-primary-dark);
+}
+
+.nak-hr-dashboard-content {
+  display: grid;
+  gap: 18px;
+}
+
+.nak-hr-dashboard-panel {
+  padding: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 18px;
+  background: rgba(248, 250, 252, 0.8);
+}
+
+.nak-hr-dashboard-panel h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: var(--nak-text);
+}
+
+.nak-hr-dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  color: var(--nak-text-soft);
+}
+
+.nak-hr-dashboard-empty p {
+  margin: 0;
+  color: var(--nak-text-soft);
 }
 
 @media (max-width: 640px) {
@@ -139,7 +249,8 @@
     border-radius: 22px;
   }
 
-  .nak-hr-grid {
+  .nak-hr-grid,
+  .nak-hr-dashboard-layout {
     grid-template-columns: 1fr;
   }
 }

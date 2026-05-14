@@ -26,6 +26,7 @@ class Signup_Shortcode
             'last_name' => '',
             'email' => '',
             'username' => '',
+            'role' => '',
         ];
 
         if (!empty($_POST['nak_hr_signup']) && is_array($_POST['nak_hr_signup'])) {
@@ -37,8 +38,7 @@ class Signup_Shortcode
         <div class="nak-hr-auth-shell">
             <div class="nak-hr-auth-card">
                 <div class="nak-hr-auth-copy">
-                    <span class="nak-hr-auth-eyebrow"><?php esc_html_e('Infinity ECN Team Access', 'nooralkhalij-hr-system'); ?></span>
-                    <h2><?php esc_html_e('Create your HR account', 'nooralkhalij-hr-system'); ?></h2>
+                    <h2><?php esc_html_e('Create account', 'nooralkhalij-hr-system'); ?></h2>
                     <p><?php esc_html_e('Use your company email to join the employee platform and access upcoming HR tools.', 'nooralkhalij-hr-system'); ?></p>
                 </div>
 
@@ -71,6 +71,17 @@ class Signup_Shortcode
                     <label>
                         <span><?php esc_html_e('Company email', 'nooralkhalij-hr-system'); ?></span>
                         <input type="email" name="nak_hr_signup[email]" value="<?php echo esc_attr($defaults['email']); ?>" placeholder="name@infinityecn.com" pattern=".+@infinityecn\.com$" required>
+                    </label>
+
+                    <label>
+                        <span><?php esc_html_e('Department', 'nooralkhalij-hr-system'); ?></span>
+                        <select name="nak_hr_signup[role]" required>
+                            <option value=""><?php esc_html_e('Select department', 'nooralkhalij-hr-system'); ?></option>
+                            <?php foreach (Plugin::get_employee_roles() as $role_key => $role_label) : ?>
+                                <?php if ($role_key === 'nak_employee') { continue; } ?>
+                                <option value="<?php echo esc_attr($role_key); ?>" <?php selected($defaults['role'], $role_key, false); ?>><?php echo esc_html($role_label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </label>
 
                     <div class="nak-hr-grid">
@@ -114,10 +125,11 @@ class Signup_Shortcode
         $email = sanitize_email($data['email'] ?? '');
         $password = (string) ($data['password'] ?? '');
         $password_confirm = (string) ($data['password_confirm'] ?? '');
+        $role = sanitize_key($data['role'] ?? '');
 
         $errors = [];
 
-        if ($first_name === '' || $last_name === '' || $username === '' || $email === '' || $password === '' || $password_confirm === '') {
+        if ($first_name === '' || $last_name === '' || $username === '' || $email === '' || $password === '' || $password_confirm === '' || $role === '') {
             $errors[] = __('Please complete all required fields.', 'nooralkhalij-hr-system');
         }
 
@@ -139,6 +151,13 @@ class Signup_Shortcode
 
         if ($email && email_exists($email)) {
             $errors[] = __('An account with that email already exists.', 'nooralkhalij-hr-system');
+        }
+
+        $allowed_roles = Plugin::get_employee_roles();
+        unset($allowed_roles['nak_employee']);
+
+        if ($role !== '' && !array_key_exists($role, $allowed_roles)) {
+            $errors[] = __('Please choose a valid department.', 'nooralkhalij-hr-system');
         }
 
         if (!empty($errors)) {
@@ -165,7 +184,7 @@ class Signup_Shortcode
             'first_name' => $first_name,
             'last_name' => $last_name,
             'display_name' => trim($first_name . ' ' . $last_name),
-            'role' => 'nak_employee',
+            'role' => $role,
         ]);
 
         return [[

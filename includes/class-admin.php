@@ -19,6 +19,15 @@ class Admin
             'dashicons-groups',
             58
         );
+
+        add_submenu_page(
+            'nak-hr-system',
+            __('Employees', 'nooralkhalij-hr-system'),
+            __('Employees', 'nooralkhalij-hr-system'),
+            'manage_options',
+            'nak-hr-employees',
+            [self::class, 'render_employees_page']
+        );
     }
 
     public static function render_shortcode_page(): void
@@ -28,14 +37,28 @@ class Admin
                 'tag' => '[nak_hr_signup]',
                 'description' => __('Displays the company signup form for creating new users with @infinityecn.com emails only.', 'nooralkhalij-hr-system'),
             ],
+            [
+                'tag' => '[nak_hr_login]',
+                'description' => __('Displays the employee login form for HR system users.', 'nooralkhalij-hr-system'),
+            ],
+            [
+                'tag' => '[nak_hr_auth]',
+                'description' => __('Displays login/signup when logged out, and dashboard/sign out when logged in.', 'nooralkhalij-hr-system'),
+            ],
+            [
+                'tag' => '[nak_hr_dashboard]',
+                'description' => __('Displays the logged-in user dashboard only.', 'nooralkhalij-hr-system'),
+            ],
         ];
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Noor Al Khalij HR System', 'nooralkhalij-hr-system'); ?></h1>
             <p><?php esc_html_e('Use these shortcodes on any page to render plugin features.', 'nooralkhalij-hr-system'); ?></p>
             <p>
-                <strong><?php esc_html_e('Employee role key:', 'nooralkhalij-hr-system'); ?></strong>
-                <code>nak_employee</code>
+                <strong><?php esc_html_e('Available employee roles:', 'nooralkhalij-hr-system'); ?></strong>
+                <?php foreach (Plugin::get_employee_roles() as $role_key => $role_label) : ?>
+                    <code style="margin-right: 8px;"><?php echo esc_html($role_key); ?></code>
+                <?php endforeach; ?>
             </p>
 
             <table class="widefat striped" style="max-width: 980px; margin-top: 20px;">
@@ -54,6 +77,130 @@ class Admin
                     <?php endforeach; ?>
                 </tbody>
             </table>
+        </div>
+        <?php
+    }
+
+    public static function render_employees_page(): void
+    {
+        $per_page = 20;
+        $current_page = max(1, absint($_GET['paged'] ?? 1));
+        $offset = ($current_page - 1) * $per_page;
+        $search = sanitize_text_field(wp_unslash($_GET['s'] ?? ''));
+
+        $role_keys = array_keys(Plugin::get_employee_roles());
+        $query_args = [
+            'meta_query' => [
+                [
+                    'key' => $GLOBALS['wpdb']->get_blog_prefix() . 'capabilities',
+                    'value' => '"nak_',
+                    'compare' => 'LIKE',
+                ],
+            ],
+            'orderby' => 'registered',
+            'order' => 'DESC',
+            'number' => $per_page,
+            'offset' => $offset,
+            'count_total' => true,
+        ];
+
+        if ($search !== '') {
+            $query_args['search'] = '*' . $search . '*';
+            $query_args['search_columns'] = ['user_email', 'display_name', 'user_login'];
+        }
+
+        $query = new \WP_User_Query($query_args);
+
+        $employees = $query->get_results();
+        $total_users = (int) $query->get_total();
+        $total_pages = max(1, (int) ceil($total_users / $per_page));
+        ?>
+        <div class="wrap">
+            <h1><?php esc_html_e('Employees', 'nooralkhalij-hr-system'); ?></h1>
+            <p><?php esc_html_e('Users created for the HR system with employee department roles.', 'nooralkhalij-hr-system'); ?></p>
+
+            <form method="get" style="margin: 16px 0 20px; display: flex; gap: 8px; align-items: center; max-width: 520px;">
+                <input type="hidden" name="page" value="nak-hr-employees">
+                <input
+                    type="search"
+                    name="s"
+                    value="<?php echo esc_attr($search); ?>"
+                    placeholder="<?php esc_attr_e('Search by name or email', 'nooralkhalij-hr-system'); ?>"
+                    style="width: 100%; max-width: 360px;"
+                >
+                <button type="submit" class="button button-primary"><?php esc_html_e('Search', 'nooralkhalij-hr-system'); ?></button>
+                <?php if ($search !== '') : ?>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=nak-hr-employees')); ?>" class="button"><?php esc_html_e('Clear', 'nooralkhalij-hr-system'); ?></a>
+                <?php endif; ?>
+            </form>
+
+            <table class="widefat striped" style="max-width: 1100px; margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th><?php esc_html_e('Name', 'nooralkhalij-hr-system'); ?></th>
+                        <th><?php esc_html_e('Username', 'nooralkhalij-hr-system'); ?></th>
+                        <th><?php esc_html_e('Email', 'nooralkhalij-hr-system'); ?></th>
+                        <th><?php esc_html_e('Role', 'nooralkhalij-hr-system'); ?></th>
+                        <th><?php esc_html_e('Registered', 'nooralkhalij-hr-system'); ?></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($employees)) : ?>
+                        <tr>
+                            <td colspan="5">
+                                <?php echo esc_html($search !== '' ? __('No employees matched your search.', 'nooralkhalij-hr-system') : __('No employees found yet.', 'nooralkhalij-hr-system')); ?>
+                            </td>
+                        </tr>
+                    <?php else : ?>
+                        <?php foreach ($employees as $employee) : ?>
+                            <?php
+                            $edit_link = get_edit_user_link($employee->ID);
+                            $delete_link = current_user_can('delete_user', $employee->ID)
+                                ? wp_nonce_url(
+                                    admin_url('users.php?action=delete&user=' . $employee->ID),
+                                    'bulk-users'
+                                )
+                                : '';
+                            ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($employee->display_name ?: trim($employee->first_name . ' ' . $employee->last_name)); ?></strong>
+                                    <div class="row-actions">
+                                        <?php if ($edit_link) : ?>
+                                            <span class="edit"><a href="<?php echo esc_url($edit_link); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a></span>
+                                        <?php endif; ?>
+                                        <?php if ($edit_link && $delete_link) : ?>
+                                            <span> | </span>
+                                        <?php endif; ?>
+                                        <?php if ($delete_link) : ?>
+                                            <span class="trash"><a href="<?php echo esc_url($delete_link); ?>"><?php esc_html_e('Delete', 'nooralkhalij-hr-system'); ?></a></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                                <td><?php echo esc_html($employee->user_login); ?></td>
+                                <td><a href="mailto:<?php echo esc_attr($employee->user_email); ?>"><?php echo esc_html($employee->user_email); ?></a></td>
+                                <td><?php echo esc_html(implode(', ', array_map('translate_user_role', $employee->roles))); ?></td>
+                                <td><?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $employee->user_registered)); ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+
+            <?php
+            echo paginate_links([
+                'base' => add_query_arg([
+                    'paged' => '%#%',
+                    's' => $search,
+                ]),
+                'format' => '',
+                'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
+                'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
+                'total' => $total_pages,
+                'current' => $current_page,
+                'type' => 'plain',
+            ]);
+            ?>
         </div>
         <?php
     }

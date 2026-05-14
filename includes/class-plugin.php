@@ -8,6 +8,9 @@ if (!defined('ABSPATH')) {
 
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-admin.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-signup-shortcode.php';
+require_once NAK_HR_PLUGIN_DIR . 'includes/class-login-shortcode.php';
+require_once NAK_HR_PLUGIN_DIR . 'includes/class-auth-gateway-shortcode.php';
+require_once NAK_HR_PLUGIN_DIR . 'includes/class-dashboard-shortcode.php';
 
 class Plugin
 {
@@ -22,6 +25,17 @@ class Plugin
         return self::$instance;
     }
 
+    public static function get_employee_roles(): array
+    {
+        return [
+            'nak_employee' => __('Employee', 'nooralkhalij-hr-system'),
+            'nak_sales' => __('Sales', 'nooralkhalij-hr-system'),
+            'nak_retention' => __('Retention', 'nooralkhalij-hr-system'),
+            'nak_qc' => __('QC', 'nooralkhalij-hr-system'),
+            'nak_marketing' => __('Marketing', 'nooralkhalij-hr-system'),
+        ];
+    }
+
     public static function activate(): void
     {
         self::register_roles();
@@ -29,13 +43,15 @@ class Plugin
 
     public static function register_roles(): void
     {
-        add_role(
-            'nak_employee',
-            __('Employee', 'nooralkhalij-hr-system'),
-            [
-                'read' => true,
-            ]
-        );
+        foreach (self::get_employee_roles() as $role_key => $role_label) {
+            add_role(
+                $role_key,
+                $role_label,
+                [
+                    'read' => true,
+                ]
+            );
+        }
     }
 
     private function __construct()
@@ -49,6 +65,9 @@ class Plugin
     public function register_shortcodes(): void
     {
         Signup_Shortcode::register();
+        Login_Shortcode::register();
+        Auth_Gateway_Shortcode::register();
+        Dashboard_Shortcode::register();
     }
 
     public function register_admin_menu(): void
