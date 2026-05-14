@@ -11,6 +11,7 @@ require_once NAK_HR_PLUGIN_DIR . 'includes/class-signup-shortcode.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-login-shortcode.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-auth-gateway-shortcode.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-dashboard-shortcode.php';
+require_once NAK_HR_PLUGIN_DIR . 'includes/class-dashboard-careers-tab.php';
 require_once NAK_HR_PLUGIN_DIR . 'includes/class-careers-shortcode.php';
 
 class Plugin
