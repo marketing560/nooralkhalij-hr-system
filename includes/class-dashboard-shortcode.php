@@ -79,6 +79,8 @@ class Dashboard_Shortcode
                     <div class="nak-hr-dashboard-panel">
                         <?php if ($current_section === 'general-info') : ?>
                             <?php require NAK_HR_PLUGIN_DIR . 'includes/dashboard-tabs/general-info.php'; ?>
+                        <?php elseif ($current_section === 'leaves-vacations') : ?>
+                            <?php require NAK_HR_PLUGIN_DIR . 'includes/dashboard-tabs/leaves-vacations.php'; ?>
                         <?php elseif ($current_section === 'infinity-wiki') : ?>
                             <?php self::render_infinity_wiki(); ?>
                         <?php elseif ($current_section === 'careers' && $is_master) : ?>
