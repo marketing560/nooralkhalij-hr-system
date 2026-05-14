@@ -385,6 +385,37 @@
   color: #b91c1c;
 }
 
+.nak-hr-pagination {
+  margin-top: 20px;
+}
+
+.nak-hr-pagination .page-numbers {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  margin: 0 8px 8px 0;
+  padding: 0 14px;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--nak-text);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.nak-hr-pagination .page-numbers.current {
+  background: var(--nak-primary);
+  border-color: var(--nak-primary);
+  color: #fff;
+}
+
+.nak-hr-pagination .page-numbers:hover {
+  border-color: var(--nak-primary);
+  color: var(--nak-primary-dark);
+}
+
 .nak-hr-modal-backdrop {
   position: fixed;
   inset: 0;

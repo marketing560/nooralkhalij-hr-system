@@ -77,19 +77,21 @@ if (!defined('ABSPATH')) {
         <?php endforeach; ?>
     </div>
 
-    <?php
-    echo paginate_links([
-        'base' => add_query_arg([
-            'nak_section' => 'infinity-wiki',
-            'wiki_search' => $search,
-            'wiki_paged' => '%#%',
-        ], get_permalink() ?: ''),
-        'format' => '',
-        'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
-        'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
-        'total' => $total_pages,
-        'current' => $current_page,
-        'type' => 'plain',
-    ]);
-    ?>
+    <div class="nak-hr-pagination">
+        <?php
+        echo paginate_links([
+            'base' => add_query_arg([
+                'nak_section' => 'infinity-wiki',
+                'wiki_search' => $search,
+                'wiki_paged' => '%#%',
+            ], get_permalink() ?: ''),
+            'format' => '',
+            'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
+            'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
+            'total' => $total_pages,
+            'current' => $current_page,
+            'type' => 'plain',
+        ]);
+        ?>
+    </div>
 <?php endif; ?>
