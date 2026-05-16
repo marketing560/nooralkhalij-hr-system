@@ -38,7 +38,6 @@ class Dashboard_Shortcode
             'general-info' => __('General Info', 'nooralkhalij-hr-system'),
             'leaves-vacations' => __('Leaves and Vacations', 'nooralkhalij-hr-system'),
             'infinity-wiki' => __('Infinity Wiki', 'nooralkhalij-hr-system'),
-            'suggestions-more' => __('Suggestions and More', 'nooralkhalij-hr-system'),
         ];
 
         if ($is_master) {
