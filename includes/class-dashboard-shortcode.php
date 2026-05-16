@@ -9,6 +9,7 @@ if (!defined('ABSPATH')) {
 class Dashboard_Shortcode
 {
     private const SHORTCODE = 'nak_hr_dashboard';
+    private const LEVEL_SIZE = 5;
 
     public static function register(): void
     {
@@ -32,6 +33,7 @@ class Dashboard_Shortcode
         $quiz_ajax_url = admin_url('admin-ajax.php');
         $quiz_nonce = wp_create_nonce('nak_hr_quiz_popup');
         $should_show_quiz_popup = (int) get_user_meta($user->ID, 'nak_should_show_quiz_popup', true) === 1;
+        $progress = self::get_user_quiz_progress($user->ID);
         $sections = [
             'general-info' => __('General Info', 'nooralkhalij-hr-system'),
             'leaves-vacations' => __('Leaves and Vacations', 'nooralkhalij-hr-system'),
@@ -58,6 +60,15 @@ class Dashboard_Shortcode
                     <div class="nak-hr-dashboard-sidebar-head">
                         <h2><?php esc_html_e('Dashboard', 'nooralkhalij-hr-system'); ?></h2>
                         <p><?php echo esc_html($user->display_name ?: $user->user_login); ?></p>
+                        <div class="nak-hr-sidebar-progress">
+                            <div class="nak-hr-sidebar-progress__meta">
+                                <span><?php echo esc_html(sprintf(__('Level %d', 'nooralkhalij-hr-system'), $progress['level'])); ?></span>
+                                <span><?php echo esc_html(sprintf(__('%d%%', 'nooralkhalij-hr-system'), $progress['level_progress_percent'])); ?></span>
+                            </div>
+                            <div class="nak-hr-sidebar-progress__track">
+                                <div class="nak-hr-sidebar-progress__fill" style="width: <?php echo esc_attr((string) $progress['level_progress_percent']); ?>%;"></div>
+                            </div>
+                        </div>
                     </div>
 
                     <nav class="nak-hr-dashboard-nav">
@@ -82,14 +93,30 @@ class Dashboard_Shortcode
 
                     <div class="nak-hr-dashboard-panel">
                         <?php if ($current_section === 'general-info'): ?>
-                            <ul class="nak-hr-dashboard-list">
-                                <li><strong><?php esc_html_e('Name:', 'nooralkhalij-hr-system'); ?></strong>
-                                    <?php echo esc_html($user->display_name ?: $user->user_login); ?></li>
-                                <li><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong>
-                                    <?php echo esc_html($user->user_email); ?></li>
-                                <li><strong><?php esc_html_e('Role:', 'nooralkhalij-hr-system'); ?></strong>
-                                    <?php echo esc_html(implode(', ', $role_labels)); ?></li>
-                            </ul>
+                            <div class="nak-hr-overview-grid">
+                                <div class="nak-hr-level-card">
+                                    <div class="nak-hr-level-ring" style="--progress: <?php echo esc_attr((string) $progress['level_progress_percent']); ?>;">
+                                        <div class="nak-hr-level-ring__inner">
+                                            <span class="nak-hr-level-ring__eyebrow"><?php esc_html_e('Level', 'nooralkhalij-hr-system'); ?></span>
+                                            <strong><?php echo esc_html((string) $progress['level']); ?></strong>
+                                        </div>
+                                    </div>
+                                    <p><?php echo esc_html(sprintf(__('Progress to next level: %d%%', 'nooralkhalij-hr-system'), $progress['level_progress_percent'])); ?></p>
+                                </div>
+
+                                <ul class="nak-hr-dashboard-list">
+                                    <li><strong><?php esc_html_e('Name:', 'nooralkhalij-hr-system'); ?></strong>
+                                        <?php echo esc_html($user->display_name ?: $user->user_login); ?></li>
+                                    <li><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong>
+                                        <?php echo esc_html($user->user_email); ?></li>
+                                    <li><strong><?php esc_html_e('Role:', 'nooralkhalij-hr-system'); ?></strong>
+                                        <?php echo esc_html(implode(', ', $role_labels)); ?></li>
+                                    <li><strong><?php esc_html_e('Questions shown:', 'nooralkhalij-hr-system'); ?></strong>
+                                        <?php echo esc_html((string) $progress['questions_shown']); ?></li>
+                                    <li><strong><?php esc_html_e('Correct answers:', 'nooralkhalij-hr-system'); ?></strong>
+                                        <?php echo esc_html((string) $progress['questions_correct']); ?></li>
+                                </ul>
+                            </div>
                         <?php elseif ($current_section === 'infinity-wiki'): ?>
                             <?php self::render_infinity_wiki(); ?>
                         <?php elseif ($current_section === 'careers' && $is_master): ?>
@@ -109,6 +136,23 @@ class Dashboard_Shortcode
         <?php
 
         return (string) ob_get_clean();
+    }
+
+    private static function get_user_quiz_progress(int $user_id): array
+    {
+        $questions_shown = (int) get_user_meta($user_id, 'nak_questions_shown_count', true);
+        $questions_correct = (int) get_user_meta($user_id, 'nak_questions_correct_count', true);
+        $level = (int) floor($questions_correct / self::LEVEL_SIZE) + 1;
+        $level_base = max(0, ($level - 1) * self::LEVEL_SIZE);
+        $correct_in_level = max(0, $questions_correct - $level_base);
+        $level_progress_percent = (int) min(100, round(($correct_in_level / self::LEVEL_SIZE) * 100));
+
+        return [
+            'questions_shown' => $questions_shown,
+            'questions_correct' => $questions_correct,
+            'level' => $level,
+            'level_progress_percent' => $level_progress_percent,
+        ];
     }
 
     private static function render_infinity_wiki(): void

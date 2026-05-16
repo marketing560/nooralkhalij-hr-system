@@ -234,6 +234,34 @@
   color: var(--nak-text-soft);
 }
 
+.nak-hr-sidebar-progress {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.nak-hr-sidebar-progress__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--nak-text-soft);
+}
+
+.nak-hr-sidebar-progress__track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.24);
+  overflow: hidden;
+}
+
+.nak-hr-sidebar-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--nak-primary) 0%, var(--nak-primary-dark) 100%);
+}
+
 .nak-hr-dashboard-nav {
   display: grid;
   gap: 10px;
@@ -272,6 +300,61 @@
   margin: 0 0 12px;
   font-size: 18px;
   color: var(--nak-text);
+}
+
+.nak-hr-overview-grid {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.nak-hr-level-card {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+}
+
+.nak-hr-level-ring {
+  --size: 190px;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: conic-gradient(var(--nak-primary) calc(var(--progress) * 1%), rgba(148, 163, 184, 0.18) 0);
+  display: grid;
+  place-items: center;
+}
+
+.nak-hr-level-ring__inner {
+  width: calc(var(--size) - 26px);
+  height: calc(var(--size) - 26px);
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.18);
+}
+
+.nak-hr-level-ring__inner strong {
+  font-size: 44px;
+  line-height: 1;
+  color: var(--nak-text);
+}
+
+.nak-hr-level-ring__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--nak-text-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.nak-hr-level-card p {
+  margin: 0;
+  color: var(--nak-text-soft);
+  font-weight: 600;
 }
 
 .nak-hr-dashboard-list {
@@ -664,7 +747,12 @@ body.nak-hr-modal-open {
 
   .nak-hr-grid,
   .nak-hr-dashboard-layout,
-  .nak-hr-careers-grid {
+  .nak-hr-careers-grid,
+  .nak-hr-overview-grid {
     grid-template-columns: 1fr;
+  }
+
+  .nak-hr-level-ring {
+    --size: 160px;
   }
 }
