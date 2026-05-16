@@ -58,7 +58,7 @@ class Admin
                 'description' => __('Displays active career positions as public cards with server-side pagination.', 'nooralkhalij-hr-system'),
             ],
         ];
-        <?php
+
         if (
             strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
             && isset($_POST['nak_hr_settings_nonce'])
