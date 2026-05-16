@@ -178,8 +178,6 @@ class Plugin
         add_action('wp_ajax_nak_hr_delete_wiki_question', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_delete_wiki_question']);
         add_action('wp_ajax_nak_hr_get_career_form', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_career_form']);
         add_action('wp_ajax_nak_hr_save_career', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_career']);
-        add_action('wp_ajax_nak_hr_toggle_career', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_toggle_career']);
-        add_action('wp_ajax_nak_hr_delete_career', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_delete_career']);
     }
 
     public function register_shortcodes(): void

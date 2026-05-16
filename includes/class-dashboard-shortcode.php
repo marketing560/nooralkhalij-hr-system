@@ -279,11 +279,13 @@ class Dashboard_Shortcode
             </div>
 
             <?php if ($current_tab === 'positions'): ?>
-                <a class="nak-hr-action-button" href="<?php echo esc_url(add_query_arg([
-                    'nak_section' => 'careers',
-                    'career_tab' => 'positions',
-                    'career_form' => 1,
-                ], get_permalink() ?: '')); ?>"><?php esc_html_e('Add Position', 'nooralkhalij-hr-system'); ?></a>
+                <button
+                    type="button"
+                    class="nak-hr-action-button"
+                    data-career-form-open
+                    data-ajax-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
+                    data-nonce="<?php echo esc_attr(wp_create_nonce('nak_hr_career_modal')); ?>"
+                ><?php esc_html_e('Add Position', 'nooralkhalij-hr-system'); ?></button>
             <?php endif; ?>
         </div>
 
@@ -378,14 +380,14 @@ class Dashboard_Shortcode
                                     <?php echo esc_html($item->is_active ? __('Active', 'nooralkhalij-hr-system') : __('Inactive', 'nooralkhalij-hr-system')); ?>
                                 </div>
                                 <div class="nak-hr-wiki-actions">
-                                    <a
-                                        href="<?php echo esc_url(add_query_arg([
-                                            'nak_section' => 'careers',
-                                            'career_tab' => 'positions',
-                                            'positions_paged' => $positions_page,
-                                            'career_edit' => $item->id,
-                                            'career_form' => 1,
-                                        ], get_permalink() ?: '')); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a>
+                                    <button
+                                        type="button"
+                                        class="nak-hr-link-button"
+                                        data-career-form-open
+                                        data-career-id="<?php echo esc_attr($item->id); ?>"
+                                        data-ajax-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
+                                        data-nonce="<?php echo esc_attr(wp_create_nonce('nak_hr_career_modal')); ?>"
+                                    ><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></button>
                                     <form method="post">
                                         <?php wp_nonce_field('nak_hr_career_action', 'nak_hr_career_nonce'); ?>
                                         <input type="hidden" name="career_action" value="toggle">
@@ -427,6 +429,100 @@ class Dashboard_Shortcode
             <?php endif; ?>
         <?php endif; ?>
     <?php
+    }
+
+    public static function ajax_get_career_form(): void
+    {
+        check_ajax_referer('nak_hr_career_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $user = wp_get_current_user();
+
+        if (!in_array('nak_master', (array) $user->roles, true)) {
+            wp_send_json_error(['message' => __('You are not allowed to manage positions.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $career_id = absint($_POST['career_id'] ?? 0);
+        $editing_item = null;
+        $table_name = $wpdb->prefix . 'nak_careers';
+
+        if ($career_id > 0) {
+            $editing_item = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT id, title, details, is_active FROM {$table_name} WHERE id = %d",
+                    $career_id
+                )
+            );
+        }
+
+        ob_start();
+        self::render_career_form($editing_item);
+        wp_send_json_success(['html' => (string) ob_get_clean()]);
+    }
+
+    public static function ajax_save_career(): void
+    {
+        check_ajax_referer('nak_hr_career_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $user = wp_get_current_user();
+
+        if (!in_array('nak_master', (array) $user->roles, true)) {
+            wp_send_json_error(['message' => __('You are not allowed to manage positions.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'nak_careers';
+        $career_id = absint($_POST['career_id'] ?? 0);
+        $title = sanitize_text_field($_POST['title'] ?? '');
+        $details = sanitize_textarea_field($_POST['details'] ?? '');
+        $is_active = isset($_POST['is_active']) ? 1 : 0;
+        $errors = [];
+
+        if ($title === '') {
+            $errors[] = __('Position title is required.', 'nooralkhalij-hr-system');
+        }
+
+        if ($details === '') {
+            $errors[] = __('Position details are required.', 'nooralkhalij-hr-system');
+        }
+
+        if (!empty($errors)) {
+            wp_send_json_error(['message' => implode(' ', $errors)], 422);
+        }
+
+        $data = [
+            'title' => $title,
+            'details' => $details,
+            'is_active' => $is_active,
+        ];
+
+        if ($career_id > 0) {
+            $updated = $wpdb->update($table_name, $data, ['id' => $career_id], ['%s', '%s', '%d'], ['%d']);
+
+            if ($updated === false) {
+                wp_send_json_error(['message' => __('Failed to update the position.', 'nooralkhalij-hr-system')], 500);
+            }
+
+            wp_send_json_success(['message' => __('Position updated successfully.', 'nooralkhalij-hr-system')]);
+        }
+
+        $inserted = $wpdb->insert($table_name, $data, ['%s', '%s', '%d']);
+
+        if (!$inserted) {
+            wp_send_json_error(['message' => __('Failed to add the position.', 'nooralkhalij-hr-system')], 500);
+        }
+
+        wp_send_json_success(['message' => __('Position added successfully.', 'nooralkhalij-hr-system')]);
     }
 
     public static function ajax_get_wiki_form(): void
@@ -756,9 +852,9 @@ class Dashboard_Shortcode
                     <a href="<?php echo esc_url(add_query_arg('nak_section', 'careers', get_permalink() ?: '')); ?>">&times;</a>
                 </div>
 
-                <form method="post" class="nak-hr-auth-form">
-                    <?php wp_nonce_field('nak_hr_career_action', 'nak_hr_career_nonce'); ?>
-                    <input type="hidden" name="career_action" value="save">
+                <form method="post" class="nak-hr-auth-form" data-career-manage-form>
+                    <input type="hidden" name="action" value="nak_hr_save_career">
+                    <input type="hidden" name="nonce" value="<?php echo esc_attr(wp_create_nonce('nak_hr_career_modal')); ?>">
                     <input type="hidden" name="career_id" value="<?php echo esc_attr((string) $defaults['career_id']); ?>">
 
                     <label>
@@ -777,11 +873,12 @@ class Dashboard_Shortcode
                         <span><?php esc_html_e('Active position', 'nooralkhalij-hr-system'); ?></span>
                     </label>
 
+                    <div class="nak-hr-careers-apply-feedback" data-career-manage-feedback></div>
                     <div class="nak-hr-modal-actions">
                         <button
                             type="submit"><?php echo esc_html($editing_item ? __('Update Position', 'nooralkhalij-hr-system') : __('Save Position', 'nooralkhalij-hr-system')); ?></button>
-                        <a class="nak-hr-action-button nak-hr-action-button--secondary"
-                            href="<?php echo esc_url(add_query_arg('nak_section', 'careers', get_permalink() ?: '')); ?>"><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></a>
+                        <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary"
+                            data-careers-close><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></button>
                     </div>
                 </form>
             </div>
