@@ -38,6 +38,7 @@ class Dashboard_Shortcode
 
         if ($is_master) {
             $sections['careers'] = __('Careers', 'nooralkhalij-hr-system');
+            $sections['employees'] = __('Employees', 'nooralkhalij-hr-system');
         }
 
         $current_section = sanitize_key($_GET['nak_section'] ?? 'general-info');
@@ -90,6 +91,8 @@ class Dashboard_Shortcode
                             <?php self::render_infinity_wiki(); ?>
                         <?php elseif ($current_section === 'careers' && $is_master): ?>
                             <?php self::render_careers(); ?>
+                        <?php elseif ($current_section === 'employees' && $is_master): ?>
+                            <?php self::render_employees(); ?>
                         <?php else: ?>
                             <div class="nak-hr-dashboard-empty">
                                 <h3><?php echo esc_html($sections[$current_section]); ?></h3>
@@ -223,6 +226,100 @@ class Dashboard_Shortcode
                 'type' => 'plain',
             ]);
         ?>
+        <?php endif; ?>
+    <?php
+    }
+
+    private static function render_employees(): void
+    {
+        $per_page = 20;
+        $current_page = max(1, absint($_GET['employees_paged'] ?? 1));
+        $offset = ($current_page - 1) * $per_page;
+        $search = sanitize_text_field(wp_unslash($_GET['employees_search'] ?? ''));
+
+        $query_args = [
+            'meta_query' => [
+                [
+                    'key' => $GLOBALS['wpdb']->get_blog_prefix() . 'capabilities',
+                    'value' => '"nak_',
+                    'compare' => 'LIKE',
+                ],
+            ],
+            'orderby' => 'registered',
+            'order' => 'DESC',
+            'number' => $per_page,
+            'offset' => $offset,
+            'count_total' => true,
+        ];
+
+        if ($search !== '') {
+            $query_args['search'] = '*' . $search . '*';
+            $query_args['search_columns'] = ['user_email', 'display_name', 'user_login'];
+        }
+
+        $query = new \WP_User_Query($query_args);
+        $employees = $query->get_results();
+        $total_users = (int) $query->get_total();
+        $total_pages = max(1, (int) ceil($total_users / $per_page));
+        ?>
+        <div class="nak-hr-wiki-toolbar">
+            <form method="get" class="nak-hr-inline-search">
+                <input type="hidden" name="nak_section" value="employees">
+                <input type="search" name="employees_search" value="<?php echo esc_attr($search); ?>"
+                    placeholder="<?php esc_attr_e('Search by name or email', 'nooralkhalij-hr-system'); ?>">
+                <button type="submit"
+                    class="nak-hr-action-button"><?php esc_html_e('Search', 'nooralkhalij-hr-system'); ?></button>
+                <?php if ($search !== ''): ?>
+                    <a class="nak-hr-action-button nak-hr-action-button--secondary"
+                        href="<?php echo esc_url(add_query_arg('nak_section', 'employees', get_permalink() ?: '')); ?>"><?php esc_html_e('Clear', 'nooralkhalij-hr-system'); ?></a>
+                <?php endif; ?>
+            </form>
+        </div>
+
+        <?php if (empty($employees)): ?>
+            <div class="nak-hr-dashboard-empty">
+                <h3><?php esc_html_e('No employees found', 'nooralkhalij-hr-system'); ?></h3>
+                <p><?php echo esc_html($search !== '' ? __('No employees matched your search.', 'nooralkhalij-hr-system') : __('No employees found yet.', 'nooralkhalij-hr-system')); ?></p>
+            </div>
+        <?php else: ?>
+            <div class="nak-hr-wiki-list">
+                <?php foreach ($employees as $employee): ?>
+                    <?php
+                    $edit_link = get_edit_user_link($employee->ID);
+                    $display_name = $employee->display_name ?: trim($employee->first_name . ' ' . $employee->last_name);
+                    ?>
+                    <div class="nak-hr-wiki-item">
+                        <div class="nak-hr-wiki-item-head">
+                            <div class="nak-hr-wiki-meta"><?php echo esc_html(implode(', ', array_map('translate_user_role', $employee->roles))); ?></div>
+                            <?php if ($edit_link): ?>
+                                <div class="nak-hr-wiki-actions">
+                                    <a href="<?php echo esc_url($edit_link); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <h3><?php echo esc_html($display_name ?: $employee->user_login); ?></h3>
+                        <p><strong><?php esc_html_e('Username:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($employee->user_login); ?></p>
+                        <p><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong> <a href="mailto:<?php echo esc_attr($employee->user_email); ?>"><?php echo esc_html($employee->user_email); ?></a></p>
+                        <p><strong><?php esc_html_e('Registered:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $employee->user_registered)); ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <?php
+            echo paginate_links([
+                'base' => add_query_arg([
+                    'nak_section' => 'employees',
+                    'employees_search' => $search,
+                    'employees_paged' => '%#%',
+                ], get_permalink() ?: ''),
+                'format' => '',
+                'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
+                'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
+                'total' => $total_pages,
+                'current' => $current_page,
+                'type' => 'plain',
+            ]);
+            ?>
         <?php endif; ?>
     <?php
     }
