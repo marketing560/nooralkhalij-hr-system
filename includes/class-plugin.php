@@ -169,6 +169,7 @@ class Plugin
         add_action('admin_menu', [$this, 'register_admin_menu']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('after_setup_theme', [$this, 'maybe_hide_admin_bar']);
+        add_filter('auth_cookie_expiration', [self::class, 'filter_auth_cookie_expiration'], 10, 3);
         add_action('wp_ajax_nak_hr_get_career', [self::class, 'ajax_get_career']);
         add_action('wp_ajax_nopriv_nak_hr_get_career', [self::class, 'ajax_get_career']);
         add_action('wp_ajax_nak_hr_apply_career', [self::class, 'ajax_apply_career']);
@@ -341,6 +342,17 @@ class Plugin
         }
 
         wp_send_json_success(['message' => __('Your application was submitted successfully.', 'nooralkhalij-hr-system')]);
+    }
+
+    public static function filter_auth_cookie_expiration(int $length, int $user_id, bool $remember): int
+    {
+        $session_expiry_minutes = (int) get_option('nak_hr_session_expiry_minutes', 0);
+
+        if ($session_expiry_minutes > 0) {
+            return $session_expiry_minutes * MINUTE_IN_SECONDS;
+        }
+
+        return $length;
     }
 
     public function maybe_hide_admin_bar(): void
