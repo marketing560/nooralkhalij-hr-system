@@ -476,6 +476,7 @@ class Dashboard_Shortcode
                 <?php foreach ($employees as $employee): ?>
                     <?php
                     $display_name = $employee->display_name ?: trim($employee->first_name . ' ' . $employee->last_name);
+                    $employee_progress = self::get_user_quiz_progress((int) $employee->ID);
                     ?>
                     <div class="nak-hr-wiki-item">
                         <div class="nak-hr-wiki-item-head">
@@ -495,6 +496,7 @@ class Dashboard_Shortcode
                         <p><strong><?php esc_html_e('Username:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($employee->user_login); ?></p>
                         <p><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong> <a href="mailto:<?php echo esc_attr($employee->user_email); ?>"><?php echo esc_html($employee->user_email); ?></a></p>
                         <p><strong><?php esc_html_e('Registered:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $employee->user_registered)); ?></p>
+                        <p><strong><?php esc_html_e('Level:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html((string) $employee_progress['level']); ?></p>
                     </div>
                 <?php endforeach; ?>
             </div>
