@@ -29,6 +29,8 @@ class Dashboard_Shortcode
         $is_master = in_array('nak_master', (array) $user->roles, true);
         $role_labels = array_map('translate_user_role', $user->roles);
         $logout_url = wp_logout_url(get_permalink() ?: home_url('/'));
+        $quiz_ajax_url = admin_url('admin-ajax.php');
+        $quiz_nonce = wp_create_nonce('nak_hr_quiz_popup');
         $sections = [
             'general-info' => __('General Info', 'nooralkhalij-hr-system'),
             'leaves-vacations' => __('Leaves and Vacations', 'nooralkhalij-hr-system'),
@@ -49,7 +51,7 @@ class Dashboard_Shortcode
 
         ob_start();
         ?>
-        <div class="nak-hr-auth-shell">
+        <div class="nak-hr-auth-shell" data-quiz-popup-root data-ajax-url="<?php echo esc_url($quiz_ajax_url); ?>" data-nonce="<?php echo esc_attr($quiz_nonce); ?>">
             <div class="nak-hr-auth-card nak-hr-dashboard-layout">
                 <aside class="nak-hr-dashboard-sidebar">
                     <div class="nak-hr-dashboard-sidebar-head">
@@ -228,6 +230,152 @@ class Dashboard_Shortcode
         ?>
         <?php endif; ?>
     <?php
+    }
+
+    public static function ajax_get_quiz_popup(): void
+    {
+        check_ajax_referer('nak_hr_quiz_popup', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $user = wp_get_current_user();
+        $is_master = in_array('nak_master', (array) $user->roles, true);
+        $allowed_roles = $is_master
+            ? array_keys(Plugin::get_employee_roles())
+            : array_values(array_intersect(array_keys(Plugin::get_employee_roles()), (array) $user->roles));
+
+        if (empty($allowed_roles)) {
+            wp_send_json_error(['message' => __('No quiz questions are available for your role.', 'nooralkhalij-hr-system')], 404);
+        }
+
+        $table_name = $wpdb->prefix . 'nak_quiz_questions';
+        $questions_per_popup = max(1, min(10, (int) get_option('nak_hr_questions_per_popup', 1)));
+        $last_question_id = (int) get_user_meta($user->ID, 'nak_last_question_id', true);
+        $placeholders = implode(', ', array_fill(0, count($allowed_roles), '%s'));
+        $params = $allowed_roles;
+        $sql = "SELECT id, role, question, choices, answer_key FROM {$table_name} WHERE role IN ({$placeholders})";
+
+        if ($last_question_id > 0) {
+            $sql .= ' AND id != %d';
+            $params[] = $last_question_id;
+        }
+
+        $sql .= ' ORDER BY RAND() LIMIT %d';
+        $params[] = $questions_per_popup;
+
+        $questions = $wpdb->get_results($wpdb->prepare($sql, ...$params));
+
+        if (empty($questions) && $last_question_id > 0) {
+            $fallback_params = $allowed_roles;
+            $fallback_sql = "SELECT id, role, question, choices, answer_key FROM {$table_name} WHERE role IN ({$placeholders}) ORDER BY RAND() LIMIT %d";
+            $fallback_params[] = $questions_per_popup;
+            $questions = $wpdb->get_results($wpdb->prepare($fallback_sql, ...$fallback_params));
+        }
+
+        if (empty($questions)) {
+            wp_send_json_error(['message' => __('No quiz questions were found.', 'nooralkhalij-hr-system')], 404);
+        }
+
+        update_user_meta($user->ID, 'nak_questions_shown_count', (int) get_user_meta($user->ID, 'nak_questions_shown_count', true) + count($questions));
+        update_user_meta($user->ID, 'nak_last_question_id', (int) end($questions)->id);
+        update_user_meta($user->ID, 'nak_last_question_shown_at', current_time('mysql'));
+
+        ob_start();
+        ?>
+        <div class="nak-hr-careers-modal__content nak-hr-wiki-modal-content">
+            <button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button>
+            <h3><?php esc_html_e('Infinity Quiz', 'nooralkhalij-hr-system'); ?></h3>
+            <form class="nak-hr-auth-form" data-quiz-popup-form>
+                <input type="hidden" name="action" value="nak_hr_submit_quiz_popup">
+                <input type="hidden" name="nonce" value="<?php echo esc_attr(wp_create_nonce('nak_hr_quiz_popup')); ?>">
+                <?php foreach ($questions as $index => $question): ?>
+                    <?php $choices = json_decode((string) $question->choices, true); ?>
+                    <div class="nak-hr-wiki-item">
+                        <h3><?php echo esc_html(sprintf(__('Question %d', 'nooralkhalij-hr-system'), $index + 1)); ?></h3>
+                        <p><?php echo esc_html($question->question); ?></p>
+                        <input type="hidden" name="questions[<?php echo esc_attr((string) $index); ?>][id]" value="<?php echo esc_attr((string) $question->id); ?>">
+                        <div class="nak-hr-grid">
+                            <?php if (is_array($choices)): ?>
+                                <?php foreach ($choices as $choice_index => $choice): ?>
+                                    <label class="nak-hr-checkbox-row">
+                                        <input type="radio" name="questions[<?php echo esc_attr((string) $index); ?>][answer]" value="<?php echo esc_attr((string) $choice_index); ?>" required>
+                                        <span><?php echo esc_html((string) $choice); ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+                <div class="nak-hr-careers-apply-feedback" data-quiz-popup-feedback></div>
+                <div class="nak-hr-modal-actions">
+                    <button type="submit"><?php esc_html_e('Submit Answers', 'nooralkhalij-hr-system'); ?></button>
+                    <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary" data-careers-close><?php esc_html_e('Close', 'nooralkhalij-hr-system'); ?></button>
+                </div>
+            </form>
+        </div>
+        <?php
+
+        wp_send_json_success(['html' => (string) ob_get_clean()]);
+    }
+
+    public static function ajax_submit_quiz_popup(): void
+    {
+        check_ajax_referer('nak_hr_quiz_popup', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $user = wp_get_current_user();
+        $submitted_questions = isset($_POST['questions']) && is_array($_POST['questions']) ? wp_unslash($_POST['questions']) : [];
+
+        if (empty($submitted_questions)) {
+            wp_send_json_error(['message' => __('No answers were submitted.', 'nooralkhalij-hr-system')], 422);
+        }
+
+        $question_ids = [];
+        $submitted_answers = [];
+
+        foreach ($submitted_questions as $submitted_question) {
+            $question_id = absint($submitted_question['id'] ?? 0);
+            $answer = isset($submitted_question['answer']) ? absint($submitted_question['answer']) : null;
+
+            if ($question_id > 0 && $answer !== null) {
+                $question_ids[] = $question_id;
+                $submitted_answers[$question_id] = $answer;
+            }
+        }
+
+        if (empty($question_ids)) {
+            wp_send_json_error(['message' => __('Please answer all questions.', 'nooralkhalij-hr-system')], 422);
+        }
+
+        $placeholders = implode(', ', array_fill(0, count($question_ids), '%d'));
+        $table_name = $wpdb->prefix . 'nak_quiz_questions';
+        $questions = $wpdb->get_results($wpdb->prepare("SELECT id, answer_key FROM {$table_name} WHERE id IN ({$placeholders})", ...$question_ids));
+
+        $correct_count = 0;
+        foreach ($questions as $question) {
+            if (isset($submitted_answers[(int) $question->id]) && (int) $submitted_answers[(int) $question->id] === (int) $question->answer_key) {
+                $correct_count++;
+            }
+        }
+
+        update_user_meta($user->ID, 'nak_questions_correct_count', (int) get_user_meta($user->ID, 'nak_questions_correct_count', true) + $correct_count);
+
+        wp_send_json_success([
+            'message' => sprintf(
+                __('You answered %1$d out of %2$d questions correctly.', 'nooralkhalij-hr-system'),
+                $correct_count,
+                count($question_ids)
+            ),
+        ]);
     }
 
     private static function render_employees(): void

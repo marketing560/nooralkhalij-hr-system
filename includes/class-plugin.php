@@ -180,6 +180,8 @@ class Plugin
         add_action('wp_ajax_nak_hr_save_career', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_career']);
         add_action('wp_ajax_nak_hr_get_employee_form', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_employee_form']);
         add_action('wp_ajax_nak_hr_save_employee', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_employee']);
+        add_action('wp_ajax_nak_hr_get_quiz_popup', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_quiz_popup']);
+        add_action('wp_ajax_nak_hr_submit_quiz_popup', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_submit_quiz_popup']);
     }
 
     public function register_shortcodes(): void

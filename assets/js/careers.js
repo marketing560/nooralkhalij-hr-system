@@ -10,6 +10,39 @@ async function nakHrOpenModal(contentHtml) {
   return modal;
 }
 
+document.addEventListener('DOMContentLoaded', async () => {
+  const quizRoot = document.querySelector('[data-quiz-popup-root]');
+
+  if (!quizRoot) return;
+
+  const ajaxUrl = quizRoot.getAttribute('data-ajax-url');
+  const nonce = quizRoot.getAttribute('data-nonce');
+
+  if (!ajaxUrl || !nonce) return;
+
+  try {
+    const response = await fetch(ajaxUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      },
+      body: new URLSearchParams({
+        action: 'nak_hr_get_quiz_popup',
+        nonce,
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (payload.success && payload?.data?.html) {
+      const modal = await nakHrOpenModal(payload.data.html);
+      modal.querySelector('.nak-hr-careers-modal__dialog').innerHTML = payload.data.html;
+    }
+  } catch (error) {
+    console.error('Quiz popup failed to load.', error);
+  }
+});
+
 document.addEventListener('click', async (event) => {
   const trigger = event.target.closest('.nak-hr-career-card[data-career-id]');
   const wikiOpen = event.target.closest('[data-wiki-open]');
@@ -203,6 +236,62 @@ document.addEventListener('submit', async (event) => {
   const wikiForm = event.target.closest('[data-wiki-form]');
   const careerManageForm = event.target.closest('[data-career-manage-form]');
   const employeeManageForm = event.target.closest('[data-employee-manage-form]');
+  const quizPopupForm = event.target.closest('[data-quiz-popup-form]');
+
+  if (quizPopupForm) {
+    event.preventDefault();
+
+    const feedback = quizPopupForm.querySelector('[data-quiz-popup-feedback]');
+    const submitButton = quizPopupForm.querySelector('button[type="submit"]');
+    const formData = new FormData(quizPopupForm);
+    const quizRoot = document.querySelector('[data-quiz-popup-root]');
+    const ajaxUrl = quizRoot?.getAttribute('data-ajax-url');
+
+    if (!ajaxUrl) return;
+
+    if (feedback) {
+      feedback.textContent = 'Submitting...';
+      feedback.className = 'nak-hr-careers-apply-feedback';
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute('disabled', 'disabled');
+      submitButton.setAttribute('aria-disabled', 'true');
+      submitButton.classList.add('is-disabled');
+    }
+
+    try {
+      const response = await fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!payload.success) {
+        throw new Error(payload?.data?.message || 'Failed to submit quiz answers.');
+      }
+
+      if (feedback) {
+        feedback.textContent = payload.data.message;
+        feedback.className = 'nak-hr-careers-apply-feedback is-success';
+      }
+    } catch (error) {
+      if (feedback) {
+        feedback.textContent = error.message;
+        feedback.className = 'nak-hr-careers-apply-feedback is-error';
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.removeAttribute('disabled');
+        submitButton.removeAttribute('aria-disabled');
+        submitButton.classList.remove('is-disabled');
+      }
+    }
+    return;
+  }
 
   if (employeeManageForm) {
     event.preventDefault();

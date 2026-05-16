@@ -58,6 +58,18 @@ class Admin
                 'description' => __('Displays active career positions as public cards with server-side pagination.', 'nooralkhalij-hr-system'),
             ],
         ];
+        <?php
+        if (
+            strtoupper($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+            && isset($_POST['nak_hr_settings_nonce'])
+            && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nak_hr_settings_nonce'])), 'nak_hr_save_settings')
+        ) {
+            $questions_per_popup = max(1, min(10, absint($_POST['nak_hr_questions_per_popup'] ?? 1)));
+            update_option('nak_hr_questions_per_popup', $questions_per_popup);
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved.', 'nooralkhalij-hr-system') . '</p></div>';
+        }
+
+        $questions_per_popup = (int) get_option('nak_hr_questions_per_popup', 1);
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Noor Al Khalij HR System', 'nooralkhalij-hr-system'); ?></h1>
@@ -68,6 +80,25 @@ class Admin
                     <code style="margin-right: 8px;"><?php echo esc_html($role_key); ?></code>
                 <?php endforeach; ?>
             </p>
+
+            <form method="post" style="max-width: 520px; margin: 20px 0 28px; padding: 20px; background: #fff; border: 1px solid #dcdcde; border-radius: 8px;">
+                <?php wp_nonce_field('nak_hr_save_settings', 'nak_hr_settings_nonce'); ?>
+                <h2 style="margin-top: 0;"><?php esc_html_e('Quiz Popup Settings', 'nooralkhalij-hr-system'); ?></h2>
+                <p><?php esc_html_e('Choose how many questions should appear in the employee quiz popup.', 'nooralkhalij-hr-system'); ?></p>
+                <label for="nak_hr_questions_per_popup" style="display: block; margin-bottom: 8px; font-weight: 600;"><?php esc_html_e('Questions per popup', 'nooralkhalij-hr-system'); ?></label>
+                <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    id="nak_hr_questions_per_popup"
+                    name="nak_hr_questions_per_popup"
+                    value="<?php echo esc_attr((string) $questions_per_popup); ?>"
+                    style="width: 120px; margin-bottom: 12px;"
+                >
+                <div>
+                    <button type="submit" class="button button-primary"><?php esc_html_e('Save Settings', 'nooralkhalij-hr-system'); ?></button>
+                </div>
+            </form>
 
             <table class="widefat striped" style="max-width: 980px; margin-top: 20px;">
                 <thead>
