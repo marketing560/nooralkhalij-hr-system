@@ -111,10 +111,6 @@ class Dashboard_Shortcode
                                         <?php echo esc_html($user->user_email); ?></li>
                                     <li><strong><?php esc_html_e('Role:', 'nooralkhalij-hr-system'); ?></strong>
                                         <?php echo esc_html(implode(', ', $role_labels)); ?></li>
-                                    <li><strong><?php esc_html_e('Questions shown:', 'nooralkhalij-hr-system'); ?></strong>
-                                        <?php echo esc_html((string) $progress['questions_shown']); ?></li>
-                                    <li><strong><?php esc_html_e('Correct answers:', 'nooralkhalij-hr-system'); ?></strong>
-                                        <?php echo esc_html((string) $progress['questions_correct']); ?></li>
                                 </ul>
                             </div>
                         <?php elseif ($current_section === 'infinity-wiki'): ?>
