@@ -289,12 +289,22 @@ class Dashboard_Shortcode
 
         <?php if ($current_tab === 'applications'): ?>
             <?php
+            $per_page = 10;
+            $applications_page = max(1, absint($_GET['applications_paged'] ?? 1));
+            $applications_offset = ($applications_page - 1) * $per_page;
+            $applications_total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$applications_table}");
             $applications = $wpdb->get_results(
-                "SELECT applications.id, applications.name, applications.email, applications.phone, applications.cv_url, applications.created_at, careers.title AS career_title
-                FROM {$applications_table} applications
-                LEFT JOIN {$positions_table} careers ON careers.id = applications.career_id
-                ORDER BY applications.id DESC"
+                $wpdb->prepare(
+                    "SELECT applications.id, applications.name, applications.email, applications.phone, applications.cv_url, applications.created_at, careers.title AS career_title
+                    FROM {$applications_table} applications
+                    LEFT JOIN {$positions_table} careers ON careers.id = applications.career_id
+                    ORDER BY applications.id DESC
+                    LIMIT %d OFFSET %d",
+                    $per_page,
+                    $applications_offset
+                )
             );
+            $applications_total_pages = max(1, (int) ceil($applications_total / $per_page));
             ?>
 
             <?php if (empty($applications)): ?>
@@ -321,9 +331,38 @@ class Dashboard_Shortcode
                         </div>
                     <?php endforeach; ?>
                 </div>
+
+                <?php
+                echo paginate_links([
+                    'base' => add_query_arg([
+                        'nak_section' => 'careers',
+                        'career_tab' => 'applications',
+                        'applications_paged' => '%#%',
+                    ], get_permalink() ?: ''),
+                    'format' => '',
+                    'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
+                    'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
+                    'total' => $applications_total_pages,
+                    'current' => $applications_page,
+                    'type' => 'plain',
+                ]);
+                ?>
             <?php endif; ?>
         <?php else: ?>
-            <?php $items = $wpdb->get_results("SELECT id, title, details, is_active FROM {$positions_table} ORDER BY id DESC"); ?>
+            <?php
+            $per_page = 10;
+            $positions_page = max(1, absint($_GET['positions_paged'] ?? 1));
+            $positions_offset = ($positions_page - 1) * $per_page;
+            $positions_total = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$positions_table}");
+            $items = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT id, title, details, is_active FROM {$positions_table} ORDER BY id DESC LIMIT %d OFFSET %d",
+                    $per_page,
+                    $positions_offset
+                )
+            );
+            $positions_total_pages = max(1, (int) ceil($positions_total / $per_page));
+            ?>
 
             <?php if (empty($items)): ?>
                 <div class="nak-hr-dashboard-empty">
@@ -343,6 +382,7 @@ class Dashboard_Shortcode
                                         href="<?php echo esc_url(add_query_arg([
                                             'nak_section' => 'careers',
                                             'career_tab' => 'positions',
+                                            'positions_paged' => $positions_page,
                                             'career_edit' => $item->id,
                                             'career_form' => 1,
                                         ], get_permalink() ?: '')); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a>
@@ -368,6 +408,22 @@ class Dashboard_Shortcode
                         </div>
                     <?php endforeach; ?>
                 </div>
+
+                <?php
+                echo paginate_links([
+                    'base' => add_query_arg([
+                        'nak_section' => 'careers',
+                        'career_tab' => 'positions',
+                        'positions_paged' => '%#%',
+                    ], get_permalink() ?: ''),
+                    'format' => '',
+                    'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
+                    'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
+                    'total' => $positions_total_pages,
+                    'current' => $positions_page,
+                    'type' => 'plain',
+                ]);
+                ?>
             <?php endif; ?>
         <?php endif; ?>
     <?php
