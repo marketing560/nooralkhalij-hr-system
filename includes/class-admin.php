@@ -65,11 +65,14 @@ class Admin
             && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nak_hr_settings_nonce'])), 'nak_hr_save_settings')
         ) {
             $questions_per_popup = max(1, min(10, absint($_POST['nak_hr_questions_per_popup'] ?? 1)));
+            $quiz_interval_minutes = max(0, absint($_POST['nak_hr_quiz_interval_minutes'] ?? 0));
             update_option('nak_hr_questions_per_popup', $questions_per_popup);
+            update_option('nak_hr_quiz_interval_minutes', $quiz_interval_minutes);
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved.', 'nooralkhalij-hr-system') . '</p></div>';
         }
 
         $questions_per_popup = (int) get_option('nak_hr_questions_per_popup', 1);
+        $quiz_interval_minutes = (int) get_option('nak_hr_quiz_interval_minutes', 0);
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Noor Al Khalij HR System', 'nooralkhalij-hr-system'); ?></h1>
@@ -95,6 +98,17 @@ class Admin
                     value="<?php echo esc_attr((string) $questions_per_popup); ?>"
                     style="width: 120px; margin-bottom: 12px;"
                 >
+
+                <label for="nak_hr_quiz_interval_minutes" style="display: block; margin: 8px 0; font-weight: 600;"><?php esc_html_e('Time between quiz popups (minutes)', 'nooralkhalij-hr-system'); ?></label>
+                <input
+                    type="number"
+                    min="0"
+                    id="nak_hr_quiz_interval_minutes"
+                    name="nak_hr_quiz_interval_minutes"
+                    value="<?php echo esc_attr((string) $quiz_interval_minutes); ?>"
+                    style="width: 120px; margin-bottom: 12px;"
+                >
+                <p style="margin-top: 0; color: #50575e;"><?php esc_html_e('0 means show on every login decision.', 'nooralkhalij-hr-system'); ?></p>
                 <div>
                     <button type="submit" class="button button-primary"><?php esc_html_e('Save Settings', 'nooralkhalij-hr-system'); ?></button>
                 </div>

@@ -31,6 +31,7 @@ class Dashboard_Shortcode
         $logout_url = wp_logout_url(get_permalink() ?: home_url('/'));
         $quiz_ajax_url = admin_url('admin-ajax.php');
         $quiz_nonce = wp_create_nonce('nak_hr_quiz_popup');
+        $should_show_quiz_popup = (int) get_user_meta($user->ID, 'nak_should_show_quiz_popup', true) === 1;
         $sections = [
             'general-info' => __('General Info', 'nooralkhalij-hr-system'),
             'leaves-vacations' => __('Leaves and Vacations', 'nooralkhalij-hr-system'),
@@ -51,7 +52,7 @@ class Dashboard_Shortcode
 
         ob_start();
         ?>
-        <div class="nak-hr-auth-shell" data-quiz-popup-root data-ajax-url="<?php echo esc_url($quiz_ajax_url); ?>" data-nonce="<?php echo esc_attr($quiz_nonce); ?>">
+        <div class="nak-hr-auth-shell" <?php if ($should_show_quiz_popup): ?>data-quiz-popup-root data-ajax-url="<?php echo esc_url($quiz_ajax_url); ?>" data-nonce="<?php echo esc_attr($quiz_nonce); ?>"<?php endif; ?>>
             <div class="nak-hr-auth-card nak-hr-dashboard-layout">
                 <aside class="nak-hr-dashboard-sidebar">
                     <div class="nak-hr-dashboard-sidebar-head">
@@ -283,6 +284,7 @@ class Dashboard_Shortcode
         update_user_meta($user->ID, 'nak_questions_shown_count', (int) get_user_meta($user->ID, 'nak_questions_shown_count', true) + count($questions));
         update_user_meta($user->ID, 'nak_last_question_id', (int) end($questions)->id);
         update_user_meta($user->ID, 'nak_last_question_shown_at', current_time('mysql'));
+        update_user_meta($user->ID, 'nak_should_show_quiz_popup', 0);
 
         ob_start();
         ?>

@@ -109,6 +109,17 @@ class Login_Shortcode
             ]];
         }
 
+        $interval_minutes = (int) get_option('nak_hr_quiz_interval_minutes', 0);
+        $current_timestamp = current_time('timestamp');
+        $next_allowed_at = (int) get_user_meta($signon->ID, 'nak_quiz_popup_next_allowed_at', true);
+        $should_show_quiz = $next_allowed_at <= 0 || $current_timestamp >= $next_allowed_at;
+
+        update_user_meta($signon->ID, 'nak_should_show_quiz_popup', $should_show_quiz ? 1 : 0);
+
+        if ($should_show_quiz) {
+            update_user_meta($signon->ID, 'nak_quiz_popup_next_allowed_at', $current_timestamp + ($interval_minutes * MINUTE_IN_SECONDS));
+        }
+
         wp_safe_redirect(home_url('/my-account'));
         exit;
     }
