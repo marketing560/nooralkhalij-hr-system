@@ -285,17 +285,21 @@ class Dashboard_Shortcode
             <div class="nak-hr-wiki-list">
                 <?php foreach ($employees as $employee): ?>
                     <?php
-                    $edit_link = get_edit_user_link($employee->ID);
                     $display_name = $employee->display_name ?: trim($employee->first_name . ' ' . $employee->last_name);
                     ?>
                     <div class="nak-hr-wiki-item">
                         <div class="nak-hr-wiki-item-head">
                             <div class="nak-hr-wiki-meta"><?php echo esc_html(implode(', ', array_map('translate_user_role', $employee->roles))); ?></div>
-                            <?php if ($edit_link): ?>
-                                <div class="nak-hr-wiki-actions">
-                                    <a href="<?php echo esc_url($edit_link); ?>"><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></a>
-                                </div>
-                            <?php endif; ?>
+                            <div class="nak-hr-wiki-actions">
+                                <button
+                                    type="button"
+                                    class="nak-hr-link-button"
+                                    data-employee-form-open
+                                    data-employee-id="<?php echo esc_attr($employee->ID); ?>"
+                                    data-ajax-url="<?php echo esc_url(admin_url('admin-ajax.php')); ?>"
+                                    data-nonce="<?php echo esc_attr(wp_create_nonce('nak_hr_employee_modal')); ?>"
+                                ><?php esc_html_e('Edit', 'nooralkhalij-hr-system'); ?></button>
+                            </div>
                         </div>
                         <h3><?php echo esc_html($display_name ?: $employee->user_login); ?></h3>
                         <p><strong><?php esc_html_e('Username:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($employee->user_login); ?></p>
@@ -526,6 +530,112 @@ class Dashboard_Shortcode
             <?php endif; ?>
         <?php endif; ?>
     <?php
+    }
+
+    public static function ajax_get_employee_form(): void
+    {
+        check_ajax_referer('nak_hr_employee_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $user = wp_get_current_user();
+
+        if (!in_array('nak_master', (array) $user->roles, true)) {
+            wp_send_json_error(['message' => __('You are not allowed to manage employees.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $employee_id = absint($_POST['employee_id'] ?? 0);
+        $employee = $employee_id > 0 ? get_user_by('id', $employee_id) : false;
+
+        if (!$employee) {
+            wp_send_json_error(['message' => __('Employee not found.', 'nooralkhalij-hr-system')], 404);
+        }
+
+        ob_start();
+        self::render_employee_form($employee);
+        wp_send_json_success(['html' => (string) ob_get_clean()]);
+    }
+
+    public static function ajax_save_employee(): void
+    {
+        check_ajax_referer('nak_hr_employee_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $user = wp_get_current_user();
+
+        if (!in_array('nak_master', (array) $user->roles, true)) {
+            wp_send_json_error(['message' => __('You are not allowed to manage employees.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $employee_id = absint($_POST['employee_id'] ?? 0);
+        $employee = $employee_id > 0 ? get_user_by('id', $employee_id) : false;
+
+        if (!$employee) {
+            wp_send_json_error(['message' => __('Employee not found.', 'nooralkhalij-hr-system')], 404);
+        }
+
+        $first_name = sanitize_text_field($_POST['first_name'] ?? '');
+        $last_name = sanitize_text_field($_POST['last_name'] ?? '');
+        $username = sanitize_user($_POST['username'] ?? '');
+        $email = sanitize_email($_POST['email'] ?? '');
+        $role = sanitize_key($_POST['role'] ?? '');
+        $password = (string) ($_POST['password'] ?? '');
+        $display_name = trim($first_name . ' ' . $last_name);
+        $allowed_roles = Plugin::get_employee_roles();
+        unset($allowed_roles['nak_employee']);
+        $errors = [];
+
+        if ($first_name === '' || $last_name === '' || $username === '' || $email === '' || $role === '') {
+            $errors[] = __('Please complete all required fields.', 'nooralkhalij-hr-system');
+        }
+
+        if ($email !== '' && !is_email($email)) {
+            $errors[] = __('Please enter a valid email address.', 'nooralkhalij-hr-system');
+        }
+
+        if ($username !== '' && username_exists($username) && $username !== $employee->user_login) {
+            $errors[] = __('That username is already taken.', 'nooralkhalij-hr-system');
+        }
+
+        $existing_email = $email !== '' ? email_exists($email) : false;
+        if ($existing_email && (int) $existing_email !== (int) $employee->ID) {
+            $errors[] = __('An account with that email already exists.', 'nooralkhalij-hr-system');
+        }
+
+        if ($role !== '' && !array_key_exists($role, $allowed_roles)) {
+            $errors[] = __('Please choose a valid department.', 'nooralkhalij-hr-system');
+        }
+
+        if (!empty($errors)) {
+            wp_send_json_error(['message' => implode(' ', $errors)], 422);
+        }
+
+        $update_data = [
+            'ID' => $employee->ID,
+            'user_login' => $username,
+            'user_email' => $email,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'display_name' => $display_name !== '' ? $display_name : $username,
+            'role' => $role,
+        ];
+
+        if ($password !== '') {
+            $update_data['user_pass'] = $password;
+        }
+
+        $updated = wp_update_user($update_data);
+
+        if (is_wp_error($updated)) {
+            wp_send_json_error(['message' => $updated->get_error_message()], 500);
+        }
+
+        wp_send_json_success(['message' => __('Employee updated successfully.', 'nooralkhalij-hr-system')]);
     }
 
     public static function ajax_get_career_form(): void
@@ -926,6 +1036,74 @@ class Dashboard_Shortcode
                         type="submit"><?php echo esc_html($editing_item ? __('Update Question', 'nooralkhalij-hr-system') : __('Save Question', 'nooralkhalij-hr-system')); ?></button>
                     <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary"
                         data-careers-close><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></button>
+                </div>
+            </form>
+        </div>
+        <?php
+    }
+
+    private static function render_employee_form(\WP_User $employee): void
+    {
+        $current_role = '';
+
+        foreach ((array) $employee->roles as $role) {
+            if (str_starts_with($role, 'nak_') && $role !== 'nak_employee') {
+                $current_role = $role;
+                break;
+            }
+        }
+        ?>
+        <div class="nak-hr-careers-modal__content nak-hr-wiki-modal-content">
+            <button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button>
+            <h3><?php esc_html_e('Edit Employee', 'nooralkhalij-hr-system'); ?></h3>
+
+            <form class="nak-hr-auth-form" data-employee-manage-form>
+                <input type="hidden" name="action" value="nak_hr_save_employee">
+                <input type="hidden" name="nonce" value="<?php echo esc_attr(wp_create_nonce('nak_hr_employee_modal')); ?>">
+                <input type="hidden" name="employee_id" value="<?php echo esc_attr((string) $employee->ID); ?>">
+
+                <div class="nak-hr-grid">
+                    <label>
+                        <span><?php esc_html_e('First name', 'nooralkhalij-hr-system'); ?></span>
+                        <input type="text" name="first_name" value="<?php echo esc_attr((string) $employee->first_name); ?>" required>
+                    </label>
+
+                    <label>
+                        <span><?php esc_html_e('Last name', 'nooralkhalij-hr-system'); ?></span>
+                        <input type="text" name="last_name" value="<?php echo esc_attr((string) $employee->last_name); ?>" required>
+                    </label>
+                </div>
+
+                <label>
+                    <span><?php esc_html_e('Username', 'nooralkhalij-hr-system'); ?></span>
+                    <input type="text" name="username" value="<?php echo esc_attr($employee->user_login); ?>" required>
+                </label>
+
+                <label>
+                    <span><?php esc_html_e('Email', 'nooralkhalij-hr-system'); ?></span>
+                    <input type="email" name="email" value="<?php echo esc_attr($employee->user_email); ?>" required>
+                </label>
+
+                <label>
+                    <span><?php esc_html_e('Department', 'nooralkhalij-hr-system'); ?></span>
+                    <select name="role" required>
+                        <option value=""><?php esc_html_e('Select department', 'nooralkhalij-hr-system'); ?></option>
+                        <?php foreach (Plugin::get_employee_roles() as $role_key => $role_label) : ?>
+                            <?php if ($role_key === 'nak_employee') { continue; } ?>
+                            <option value="<?php echo esc_attr($role_key); ?>" <?php selected($current_role, $role_key, false); ?>><?php echo esc_html($role_label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <label>
+                    <span><?php esc_html_e('New password', 'nooralkhalij-hr-system'); ?></span>
+                    <input type="password" name="password" placeholder="<?php esc_attr_e('Leave blank to keep current password', 'nooralkhalij-hr-system'); ?>">
+                </label>
+
+                <div class="nak-hr-careers-apply-feedback" data-employee-manage-feedback></div>
+                <div class="nak-hr-modal-actions">
+                    <button type="submit"><?php esc_html_e('Save Employee', 'nooralkhalij-hr-system'); ?></button>
+                    <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary" data-careers-close><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></button>
                 </div>
             </form>
         </div>

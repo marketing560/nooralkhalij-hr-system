@@ -15,6 +15,7 @@ document.addEventListener('click', async (event) => {
   const wikiOpen = event.target.closest('[data-wiki-open]');
   const wikiDelete = event.target.closest('[data-wiki-delete]');
   const careerFormOpen = event.target.closest('[data-career-form-open]');
+  const employeeFormOpen = event.target.closest('[data-employee-form-open]');
   const close = event.target.closest('[data-careers-close]');
   const backdrop = event.target.classList.contains('nak-hr-careers-modal');
 
@@ -54,6 +55,41 @@ document.addEventListener('click', async (event) => {
 
     const item = wikiDelete.closest('[data-question-id]');
     if (item) item.remove();
+    return;
+  }
+
+  if (employeeFormOpen) {
+    const employeeId = employeeFormOpen.getAttribute('data-employee-id') || '';
+    const ajaxUrl = employeeFormOpen.getAttribute('data-ajax-url');
+    const nonce = employeeFormOpen.getAttribute('data-nonce');
+
+    if (!ajaxUrl || !nonce) return;
+
+    const modal = await nakHrOpenModal('<div class="nak-hr-careers-modal__loading">Loading...</div>');
+
+    try {
+      const response = await fetch(ajaxUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        },
+        body: new URLSearchParams({
+          action: 'nak_hr_get_employee_form',
+          nonce,
+          employee_id: employeeId,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!payload.success) {
+        throw new Error(payload?.data?.message || 'Failed to load employee form.');
+      }
+
+      modal.querySelector('.nak-hr-careers-modal__dialog').innerHTML = payload.data.html;
+    } catch (error) {
+      modal.querySelector('.nak-hr-careers-modal__dialog').innerHTML = '<div class="nak-hr-careers-modal__content"><button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button><p>' + error.message + '</p></div>';
+    }
     return;
   }
 
@@ -166,6 +202,65 @@ document.addEventListener('submit', async (event) => {
   const form = event.target.closest('[data-career-apply]');
   const wikiForm = event.target.closest('[data-wiki-form]');
   const careerManageForm = event.target.closest('[data-career-manage-form]');
+  const employeeManageForm = event.target.closest('[data-employee-manage-form]');
+
+  if (employeeManageForm) {
+    event.preventDefault();
+
+    const feedback = employeeManageForm.querySelector('[data-employee-manage-feedback]');
+    const submitButton = employeeManageForm.querySelector('button[type="submit"]');
+    const formData = new FormData(employeeManageForm);
+    const ajaxUrl = document.querySelector('[data-employee-form-open][data-ajax-url]')?.getAttribute('data-ajax-url');
+
+    if (!ajaxUrl) return;
+
+    if (feedback) {
+      feedback.textContent = 'Saving...';
+      feedback.className = 'nak-hr-careers-apply-feedback';
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute('disabled', 'disabled');
+      submitButton.setAttribute('aria-disabled', 'true');
+      submitButton.classList.add('is-disabled');
+    }
+
+    try {
+      const response = await fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!payload.success) {
+        throw new Error(payload?.data?.message || 'Failed to save employee.');
+      }
+
+      if (feedback) {
+        feedback.textContent = payload.data.message;
+        feedback.className = 'nak-hr-careers-apply-feedback is-success';
+      }
+
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      if (feedback) {
+        feedback.textContent = error.message;
+        feedback.className = 'nak-hr-careers-apply-feedback is-error';
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.removeAttribute('disabled');
+        submitButton.removeAttribute('aria-disabled');
+        submitButton.classList.remove('is-disabled');
+      }
+    }
+    return;
+  }
 
   if (careerManageForm) {
     event.preventDefault();
