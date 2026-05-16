@@ -43,6 +43,7 @@ class Plugin
     {
         self::register_roles();
         self::create_tables();
+        self::create_required_pages();
     }
 
     public static function register_roles(): void
@@ -110,6 +111,55 @@ class Plugin
         dbDelta($quiz_sql);
         dbDelta($careers_sql);
         dbDelta($applications_sql);
+    }
+
+    public static function create_required_pages(): void
+    {
+        $pages = [
+            [
+                'title' => 'Sign In',
+                'slug' => 'sign-in',
+                'shortcode' => '[nak_hr_signup]',
+            ],
+            [
+                'title' => 'Login',
+                'slug' => 'login',
+                'shortcode' => '[nak_hr_login]',
+            ],
+            [
+                'title' => 'My Account',
+                'slug' => 'my-account',
+                'shortcode' => '[nak_hr_dashboard]',
+            ],
+            [
+                'title' => 'Careers',
+                'slug' => 'careers',
+                'shortcode' => '[nak_hr_careers]',
+            ],
+        ];
+
+        foreach ($pages as $page) {
+            $existing_page = get_page_by_path($page['slug'], OBJECT, 'page');
+
+            if ($existing_page instanceof \WP_Post) {
+                if (strpos((string) $existing_page->post_content, $page['shortcode']) === false) {
+                    wp_update_post([
+                        'ID' => $existing_page->ID,
+                        'post_content' => trim((string) $existing_page->post_content . "\n\n" . $page['shortcode']),
+                    ]);
+                }
+
+                continue;
+            }
+
+            wp_insert_post([
+                'post_title' => $page['title'],
+                'post_name' => $page['slug'],
+                'post_status' => 'publish',
+                'post_type' => 'page',
+                'post_content' => $page['shortcode'],
+            ]);
+        }
     }
 
     private function __construct()
