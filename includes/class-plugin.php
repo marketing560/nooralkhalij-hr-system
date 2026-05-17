@@ -167,6 +167,10 @@ class Plugin
         add_action('init', [$this, 'register_shortcodes']);
         add_action('init', [self::class, 'register_roles']);
         add_action('admin_menu', [$this, 'register_admin_menu']);
+        add_action('show_user_profile', ['\\NoorAlKhalij\\HRSystem\\Admin', 'render_user_profile_fields']);
+        add_action('edit_user_profile', ['\\NoorAlKhalij\\HRSystem\\Admin', 'render_user_profile_fields']);
+        add_action('personal_options_update', ['\\NoorAlKhalij\\HRSystem\\Admin', 'save_user_profile_fields']);
+        add_action('edit_user_profile_update', ['\\NoorAlKhalij\\HRSystem\\Admin', 'save_user_profile_fields']);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
         add_action('after_setup_theme', [$this, 'maybe_hide_admin_bar']);
         add_filter('auth_cookie_expiration', [self::class, 'filter_auth_cookie_expiration'], 10, 3);

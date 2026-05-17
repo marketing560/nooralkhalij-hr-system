@@ -30,6 +30,60 @@ class Admin
         );
     }
 
+    public static function render_user_profile_fields(\WP_User $user): void
+    {
+        if (!current_user_can('edit_user', $user->ID)) {
+            return;
+        }
+
+        $email_activated = (int) get_user_meta($user->ID, 'nak_email_activated', true) === 1;
+        ?>
+        <h2><?php esc_html_e('Noor Al Khalij HR Settings', 'nooralkhalij-hr-system'); ?></h2>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th><label for="nak_email_activated"><?php esc_html_e('Email activated', 'nooralkhalij-hr-system'); ?></label></th>
+                <td>
+                    <label for="nak_email_activated">
+                        <input
+                            type="checkbox"
+                            name="nak_email_activated"
+                            id="nak_email_activated"
+                            value="1"
+                            <?php checked($email_activated); ?>
+                        >
+                        <?php esc_html_e('Mark this user as email verified.', 'nooralkhalij-hr-system'); ?>
+                    </label>
+                    <p class="description"><?php esc_html_e('Uncheck to require email verification again.', 'nooralkhalij-hr-system'); ?></p>
+                    <?php wp_nonce_field('nak_hr_save_user_profile', 'nak_hr_user_profile_nonce'); ?>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    public static function save_user_profile_fields(int $user_id): void
+    {
+        if (!current_user_can('edit_user', $user_id)) {
+            return;
+        }
+
+        if (
+            empty($_POST['nak_hr_user_profile_nonce'])
+            || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nak_hr_user_profile_nonce'])), 'nak_hr_save_user_profile')
+        ) {
+            return;
+        }
+
+        $is_email_activated = isset($_POST['nak_email_activated']) ? 1 : 0;
+        update_user_meta($user_id, 'nak_email_activated', $is_email_activated);
+
+        if ($is_email_activated === 1) {
+            delete_user_meta($user_id, 'nak_email_verification_code');
+            delete_user_meta($user_id, 'nak_email_verification_sent_at');
+            delete_user_meta($user_id, 'nak_email_verification_expires_at');
+        }
+    }
+
     public static function render_shortcode_page(): void
     {
         $shortcodes = [
