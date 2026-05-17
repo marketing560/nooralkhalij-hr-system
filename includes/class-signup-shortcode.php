@@ -187,6 +187,11 @@ class Signup_Shortcode
             'role' => $role,
         ]);
 
+        update_user_meta($user_id, 'nak_email_activated', 0);
+        delete_user_meta($user_id, 'nak_email_verification_code');
+        delete_user_meta($user_id, 'nak_email_verification_sent_at');
+        delete_user_meta($user_id, 'nak_email_verification_expires_at');
+
         return [[
             'type' => 'success',
             'text' => __('Your account has been created successfully. You can now log in.', 'nooralkhalij-hr-system'),

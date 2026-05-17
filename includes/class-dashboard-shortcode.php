@@ -10,6 +10,8 @@ class Dashboard_Shortcode
 {
     private const SHORTCODE = 'nak_hr_dashboard';
     private const LEVEL_SIZE = 5;
+    private const EMAIL_VERIFICATION_RESEND_COOLDOWN = 300;
+    private const EMAIL_VERIFICATION_EXPIRY = 600;
 
     public static function register(): void
     {
@@ -34,6 +36,12 @@ class Dashboard_Shortcode
         $quiz_nonce = wp_create_nonce('nak_hr_quiz_popup');
         $should_show_quiz_popup = (int) get_user_meta($user->ID, 'nak_should_show_quiz_popup', true) === 1;
         $progress = self::get_user_quiz_progress($user->ID);
+        $email_activated = (int) get_user_meta($user->ID, 'nak_email_activated', true) === 1;
+
+        if (!$email_activated) {
+            return self::render_email_verification_gate($user);
+        }
+
         $sections = [
             'general-info' => __('General Info', 'nooralkhalij-hr-system'),
             'leaves-vacations' => __('Leaves and Vacations', 'nooralkhalij-hr-system'),
@@ -131,6 +139,229 @@ class Dashboard_Shortcode
         <?php
 
         return (string) ob_get_clean();
+    }
+
+    private static function render_email_verification_gate(\WP_User $user): string
+    {
+        $messages = self::handle_email_verification_submission($user);
+        $can_resend_at = self::get_email_verification_can_resend_at($user->ID);
+        $expires_at = self::get_email_verification_expires_at($user->ID);
+        $current_timestamp = current_time('timestamp');
+        $seconds_until_resend = max(0, $can_resend_at - $current_timestamp);
+        $seconds_until_expiry = max(0, $expires_at - $current_timestamp);
+        $has_active_code = $expires_at > $current_timestamp;
+
+        ob_start();
+        ?>
+        <div class="nak-hr-auth-shell">
+            <div class="nak-hr-auth-card nak-hr-auth-card--narrow">
+                <div class="nak-hr-auth-copy">
+                    <span class="nak-hr-auth-eyebrow"><?php esc_html_e('Email Verification', 'nooralkhalij-hr-system'); ?></span>
+                    <h2><?php esc_html_e('Verify your email', 'nooralkhalij-hr-system'); ?></h2>
+                    <p><?php echo esc_html(sprintf(__('We sent a verification code to %s. Enter it below to access your dashboard.', 'nooralkhalij-hr-system'), $user->user_email)); ?></p>
+                    <?php if ($has_active_code): ?>
+                        <p class="nak-hr-verification-meta"><?php echo esc_html(sprintf(__('This code expires in %s.', 'nooralkhalij-hr-system'), self::human_time_remaining($seconds_until_expiry))); ?></p>
+                    <?php endif; ?>
+                </div>
+
+                <?php foreach ($messages as $message) : ?>
+                    <div class="nak-hr-alert nak-hr-alert--<?php echo esc_attr($message['type']); ?>">
+                        <?php echo esc_html($message['text']); ?>
+                    </div>
+                <?php endforeach; ?>
+
+                <form method="post" class="nak-hr-auth-form" novalidate>
+                    <?php wp_nonce_field('nak_hr_verify_email_action', 'nak_hr_verify_email_nonce'); ?>
+                    <input type="hidden" name="nak_hr_verify_email[action]" value="verify">
+
+                    <label>
+                        <span><?php esc_html_e('Verification code', 'nooralkhalij-hr-system'); ?></span>
+                        <input type="text" name="nak_hr_verify_email[code]" inputmode="numeric" autocomplete="one-time-code" maxlength="6" required>
+                    </label>
+
+                    <button type="submit"><?php esc_html_e('Verify email', 'nooralkhalij-hr-system'); ?></button>
+                </form>
+
+                <form method="post" class="nak-hr-auth-form nak-hr-auth-form--inline" novalidate>
+                    <?php wp_nonce_field('nak_hr_verify_email_action', 'nak_hr_verify_email_nonce'); ?>
+                    <input type="hidden" name="nak_hr_verify_email[action]" value="resend">
+                    <button type="submit" class="nak-hr-action-button nak-hr-action-button--secondary" <?php disabled($seconds_until_resend > 0); ?>>
+                        <?php esc_html_e('Resend code', 'nooralkhalij-hr-system'); ?>
+                    </button>
+                    <?php if ($seconds_until_resend > 0): ?>
+                        <p class="nak-hr-verification-meta"><?php echo esc_html(sprintf(__('You can resend in %s.', 'nooralkhalij-hr-system'), self::human_time_remaining($seconds_until_resend))); ?></p>
+                    <?php else: ?>
+                        <p class="nak-hr-verification-meta"><?php esc_html_e('You can request a new code now.', 'nooralkhalij-hr-system'); ?></p>
+                    <?php endif; ?>
+                </form>
+            </div>
+        </div>
+        <?php
+
+        return (string) ob_get_clean();
+    }
+
+    private static function handle_email_verification_submission(\WP_User $user): array
+    {
+        self::ensure_email_verification_code($user);
+
+        if (strtoupper($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
+            return [];
+        }
+
+        if (empty($_POST['nak_hr_verify_email_nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nak_hr_verify_email_nonce'])), 'nak_hr_verify_email_action')) {
+            return [];
+        }
+
+        $data = isset($_POST['nak_hr_verify_email']) && is_array($_POST['nak_hr_verify_email'])
+            ? wp_unslash($_POST['nak_hr_verify_email'])
+            : [];
+
+        $action = sanitize_key($data['action'] ?? '');
+
+        if ($action === 'resend') {
+            return self::handle_email_verification_resend($user);
+        }
+
+        if ($action !== 'verify') {
+            return [];
+        }
+
+        $submitted_code = preg_replace('/\D+/', '', (string) ($data['code'] ?? ''));
+        $stored_code = (string) get_user_meta($user->ID, 'nak_email_verification_code', true);
+        $expires_at = self::get_email_verification_expires_at($user->ID);
+        $current_timestamp = current_time('timestamp');
+
+        if ($submitted_code === '') {
+            return [[
+                'type' => 'error',
+                'text' => __('Please enter the verification code.', 'nooralkhalij-hr-system'),
+            ]];
+        }
+
+        if ($stored_code === '' || $expires_at <= $current_timestamp) {
+            self::send_email_verification_code($user, true);
+
+            return [[
+                'type' => 'error',
+                'text' => __('Your verification code has expired. We sent you a new code.', 'nooralkhalij-hr-system'),
+            ]];
+        }
+
+        if (!hash_equals($stored_code, $submitted_code)) {
+            return [[
+                'type' => 'error',
+                'text' => __('The verification code is incorrect.', 'nooralkhalij-hr-system'),
+            ]];
+        }
+
+        update_user_meta($user->ID, 'nak_email_activated', 1);
+        delete_user_meta($user->ID, 'nak_email_verification_code');
+        delete_user_meta($user->ID, 'nak_email_verification_sent_at');
+        delete_user_meta($user->ID, 'nak_email_verification_expires_at');
+
+        wp_safe_redirect(home_url('/my-account'));
+        exit;
+    }
+
+    private static function handle_email_verification_resend(\WP_User $user): array
+    {
+        $current_timestamp = current_time('timestamp');
+        $can_resend_at = self::get_email_verification_can_resend_at($user->ID);
+
+        if ($can_resend_at > $current_timestamp) {
+            return [[
+                'type' => 'error',
+                'text' => sprintf(__('Please wait %s before requesting another code.', 'nooralkhalij-hr-system'), self::human_time_remaining($can_resend_at - $current_timestamp)),
+            ]];
+        }
+
+        $sent = self::send_email_verification_code($user, true);
+
+        if (!$sent) {
+            return [[
+                'type' => 'error',
+                'text' => __('We could not send the verification email right now. Please try again in a moment.', 'nooralkhalij-hr-system'),
+            ]];
+        }
+
+        return [[
+            'type' => 'success',
+            'text' => __('A new verification code has been sent to your email.', 'nooralkhalij-hr-system'),
+        ]];
+    }
+
+    private static function ensure_email_verification_code(\WP_User $user): void
+    {
+        if ((int) get_user_meta($user->ID, 'nak_email_activated', true) === 1) {
+            return;
+        }
+
+        $stored_code = (string) get_user_meta($user->ID, 'nak_email_verification_code', true);
+        $expires_at = self::get_email_verification_expires_at($user->ID);
+        $current_timestamp = current_time('timestamp');
+
+        if ($stored_code !== '' && $expires_at > $current_timestamp) {
+            return;
+        }
+
+        self::send_email_verification_code($user, true);
+    }
+
+    private static function send_email_verification_code(\WP_User $user, bool $force = false): bool
+    {
+        $current_timestamp = current_time('timestamp');
+        $can_resend_at = self::get_email_verification_can_resend_at($user->ID);
+
+        if (!$force && $can_resend_at > $current_timestamp) {
+            return false;
+        }
+
+        $code = (string) wp_rand(100000, 999999);
+        $expires_at = $current_timestamp + self::EMAIL_VERIFICATION_EXPIRY;
+        $subject = __('Your verification code', 'nooralkhalij-hr-system');
+        $message = sprintf(
+            "Hello %s,\n\nYour Noor Al Khalij HR System verification code is: %s\n\nThis code will expire in 10 minutes.\n\nIf you did not request this, you can ignore this email.",
+            $user->display_name ?: $user->user_login,
+            $code
+        );
+
+        $sent = wp_mail($user->user_email, $subject, $message);
+
+        if (!$sent) {
+            return false;
+        }
+
+        update_user_meta($user->ID, 'nak_email_verification_code', $code);
+        update_user_meta($user->ID, 'nak_email_verification_sent_at', $current_timestamp);
+        update_user_meta($user->ID, 'nak_email_verification_expires_at', $expires_at);
+        update_user_meta($user->ID, 'nak_email_activated', 0);
+
+        return true;
+    }
+
+    private static function get_email_verification_can_resend_at(int $user_id): int
+    {
+        $sent_at = (int) get_user_meta($user_id, 'nak_email_verification_sent_at', true);
+
+        return $sent_at > 0 ? $sent_at + self::EMAIL_VERIFICATION_RESEND_COOLDOWN : 0;
+    }
+
+    private static function get_email_verification_expires_at(int $user_id): int
+    {
+        return (int) get_user_meta($user_id, 'nak_email_verification_expires_at', true);
+    }
+
+    private static function human_time_remaining(int $seconds): string
+    {
+        $seconds = max(0, $seconds);
+        $minutes = (int) ceil($seconds / 60);
+
+        if ($minutes <= 1) {
+            return __('less than a minute', 'nooralkhalij-hr-system');
+        }
+
+        return sprintf(_n('%d minute', '%d minutes', $minutes, 'nooralkhalij-hr-system'), $minutes);
     }
 
     private static function get_user_quiz_progress(int $user_id): array
