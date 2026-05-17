@@ -12,6 +12,19 @@ class Dashboard_Shortcode
     private const LEVEL_SIZE = 5;
     private const EMAIL_VERIFICATION_RESEND_COOLDOWN = 300;
     private const EMAIL_VERIFICATION_EXPIRY = 600;
+    private const VACATION_TYPES = [
+        'vacation' => 'Vacation',
+        'sick' => 'Sick Leave',
+        'emergency' => 'Emergency Leave',
+        'unpaid' => 'Unpaid Leave',
+        'other' => 'Other',
+    ];
+    private const VACATION_STATUSES = [
+        'pending' => 'Pending',
+        'approved' => 'Approved',
+        'rejected' => 'Rejected',
+        'cancelled' => 'Cancelled',
+    ];
 
     public static function register(): void
     {
@@ -120,6 +133,8 @@ class Dashboard_Shortcode
                                         <?php echo esc_html(implode(', ', $role_labels)); ?></li>
                                 </ul>
                             </div>
+                        <?php elseif ($current_section === 'leaves-vacations'): ?>
+                            <?php self::render_vacations($user, $is_master); ?>
                         <?php elseif ($current_section === 'infinity-wiki'): ?>
                             <?php self::render_infinity_wiki(); ?>
                         <?php elseif ($current_section === 'careers' && $is_master): ?>
@@ -748,6 +763,273 @@ class Dashboard_Shortcode
             ?>
         <?php endif; ?>
     <?php
+    }
+
+    private static function render_vacations(\WP_User $user, bool $is_master): void
+    {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'nak_vacation_requests';
+        $per_page = 10;
+        $current_page = max(1, absint($_GET['vacations_paged'] ?? 1));
+        $offset = ($current_page - 1) * $per_page;
+        $ajax_url = admin_url('admin-ajax.php');
+        $nonce = wp_create_nonce('nak_hr_vacation_modal');
+
+        if ($is_master) {
+            $total_items = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
+            $items = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT requests.*, users.display_name, users.user_login, users.user_email
+                    FROM {$table_name} requests
+                    LEFT JOIN {$wpdb->users} users ON users.ID = requests.user_id
+                    ORDER BY requests.id DESC
+                    LIMIT %d OFFSET %d",
+                    $per_page,
+                    $offset
+                )
+            );
+        } else {
+            $total_items = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table_name} WHERE user_id = %d", $user->ID));
+            $items = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT requests.*, users.display_name, users.user_login, users.user_email
+                    FROM {$table_name} requests
+                    LEFT JOIN {$wpdb->users} users ON users.ID = requests.user_id
+                    WHERE requests.user_id = %d
+                    ORDER BY requests.id DESC
+                    LIMIT %d OFFSET %d",
+                    $user->ID,
+                    $per_page,
+                    $offset
+                )
+            );
+        }
+
+        $total_pages = max(1, (int) ceil($total_items / $per_page));
+        ?>
+        <div class="nak-hr-wiki-toolbar">
+            <div></div>
+            <button
+                type="button"
+                class="nak-hr-action-button"
+                data-vacation-form-open
+                data-ajax-url="<?php echo esc_url($ajax_url); ?>"
+                data-nonce="<?php echo esc_attr($nonce); ?>"
+            ><?php esc_html_e('Add Vacation Request', 'nooralkhalij-hr-system'); ?></button>
+        </div>
+
+        <?php if (empty($items)): ?>
+            <div class="nak-hr-dashboard-empty">
+                <h3><?php esc_html_e('No vacation requests found', 'nooralkhalij-hr-system'); ?></h3>
+                <p><?php esc_html_e('No vacation requests have been submitted yet.', 'nooralkhalij-hr-system'); ?></p>
+            </div>
+        <?php else: ?>
+            <div class="nak-hr-wiki-list">
+                <?php foreach ($items as $item): ?>
+                    <div class="nak-hr-wiki-item">
+                        <div class="nak-hr-wiki-item-head">
+                            <div class="nak-hr-wiki-meta"><?php echo esc_html(self::get_vacation_type_label((string) $item->vacation_type)); ?></div>
+                            <div class="nak-hr-wiki-actions">
+                                <?php if ($is_master): ?>
+                                    <form class="nak-hr-inline-status-form" data-vacation-status-form>
+                                        <input type="hidden" name="action" value="nak_hr_update_vacation_status">
+                                        <input type="hidden" name="nonce" value="<?php echo esc_attr($nonce); ?>">
+                                        <input type="hidden" name="request_id" value="<?php echo esc_attr((string) $item->id); ?>">
+                                        <select name="status">
+                                            <?php foreach (self::get_vacation_statuses() as $status_key => $status_label): ?>
+                                                <option value="<?php echo esc_attr($status_key); ?>" <?php selected((string) $item->status, $status_key, false); ?>><?php echo esc_html($status_label); ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button type="submit" class="nak-hr-link-button"><?php esc_html_e('Update', 'nooralkhalij-hr-system'); ?></button>
+                                    </form>
+                                <?php endif; ?>
+                                <button
+                                    type="button"
+                                    class="nak-hr-link-button nak-hr-link-button--danger"
+                                    data-vacation-delete
+                                    data-request-id="<?php echo esc_attr((string) $item->id); ?>"
+                                    data-ajax-url="<?php echo esc_url($ajax_url); ?>"
+                                    data-nonce="<?php echo esc_attr($nonce); ?>"
+                                ><?php esc_html_e('Delete', 'nooralkhalij-hr-system'); ?></button>
+                            </div>
+                        </div>
+                        <h3><?php echo esc_html(sprintf(__('From %1$s to %2$s', 'nooralkhalij-hr-system'), mysql2date(get_option('date_format'), $item->date_from), mysql2date(get_option('date_format'), $item->date_to))); ?></h3>
+                        <p><strong><?php esc_html_e('Status:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html(self::get_vacation_status_label((string) $item->status)); ?></p>
+                        <?php if ($is_master): ?>
+                            <p><strong><?php esc_html_e('Employee:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html($item->display_name ?: $item->user_login ?: __('Unknown user', 'nooralkhalij-hr-system')); ?></p>
+                            <p><strong><?php esc_html_e('Email:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html((string) $item->user_email); ?></p>
+                        <?php endif; ?>
+                        <p><strong><?php esc_html_e('Requested on:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html(mysql2date(get_option('date_format') . ' ' . get_option('time_format'), $item->created_at)); ?></p>
+                        <?php if (!empty($item->additional_info)): ?>
+                            <p><strong><?php esc_html_e('Additional info:', 'nooralkhalij-hr-system'); ?></strong> <?php echo esc_html((string) $item->additional_info); ?></p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+
+            <?php
+            echo paginate_links([
+                'base' => add_query_arg([
+                    'nak_section' => 'leaves-vacations',
+                    'vacations_paged' => '%#%',
+                ], get_permalink() ?: ''),
+                'format' => '',
+                'prev_text' => __('&laquo; Previous', 'nooralkhalij-hr-system'),
+                'next_text' => __('Next &raquo;', 'nooralkhalij-hr-system'),
+                'total' => $total_pages,
+                'current' => $current_page,
+                'type' => 'plain',
+            ]);
+            ?>
+        <?php endif; ?>
+        <?php
+    }
+
+    public static function ajax_get_vacation_form(): void
+    {
+        check_ajax_referer('nak_hr_vacation_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        ob_start();
+        self::render_vacation_form();
+        wp_send_json_success(['html' => (string) ob_get_clean()]);
+    }
+
+    public static function ajax_save_vacation_request(): void
+    {
+        check_ajax_referer('nak_hr_vacation_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $user = wp_get_current_user();
+        $table_name = $wpdb->prefix . 'nak_vacation_requests';
+        $vacation_type = sanitize_key($_POST['vacation_type'] ?? '');
+        $date_from = sanitize_text_field($_POST['date_from'] ?? '');
+        $date_to = sanitize_text_field($_POST['date_to'] ?? '');
+        $additional_info = sanitize_textarea_field($_POST['additional_info'] ?? '');
+        $allowed_types = array_keys(self::get_vacation_types());
+        $errors = [];
+
+        if (!in_array($vacation_type, $allowed_types, true)) {
+            $errors[] = __('Please choose a valid vacation type.', 'nooralkhalij-hr-system');
+        }
+
+        if (!self::is_valid_date($date_from) || !self::is_valid_date($date_to)) {
+            $errors[] = __('Please choose valid from and to dates.', 'nooralkhalij-hr-system');
+        } elseif ($date_from > $date_to) {
+            $errors[] = __('The from date cannot be later than the to date.', 'nooralkhalij-hr-system');
+        }
+
+        if (!empty($errors)) {
+            wp_send_json_error(['message' => implode(' ', $errors)], 422);
+        }
+
+        $inserted = $wpdb->insert(
+            $table_name,
+            [
+                'user_id' => $user->ID,
+                'vacation_type' => $vacation_type,
+                'date_from' => $date_from,
+                'date_to' => $date_to,
+                'additional_info' => $additional_info,
+                'status' => 'pending',
+            ],
+            ['%d', '%s', '%s', '%s', '%s', '%s']
+        );
+
+        if (!$inserted) {
+            wp_send_json_error(['message' => __('Failed to save the vacation request.', 'nooralkhalij-hr-system')], 500);
+        }
+
+        self::send_vacation_request_notification($user, $vacation_type, $date_from, $date_to, $additional_info);
+
+        wp_send_json_success(['message' => __('Vacation request submitted successfully.', 'nooralkhalij-hr-system')]);
+    }
+
+    public static function ajax_delete_vacation_request(): void
+    {
+        check_ajax_referer('nak_hr_vacation_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $user = wp_get_current_user();
+        $is_master = in_array('nak_master', (array) $user->roles, true);
+        $table_name = $wpdb->prefix . 'nak_vacation_requests';
+        $request_id = absint($_POST['request_id'] ?? 0);
+
+        if ($request_id <= 0) {
+            wp_send_json_error(['message' => __('Invalid request.', 'nooralkhalij-hr-system')], 422);
+        }
+
+        $request = $wpdb->get_row($wpdb->prepare("SELECT id, user_id FROM {$table_name} WHERE id = %d", $request_id));
+
+        if (!$request) {
+            wp_send_json_error(['message' => __('Vacation request not found.', 'nooralkhalij-hr-system')], 404);
+        }
+
+        if (!$is_master && (int) $request->user_id !== (int) $user->ID) {
+            wp_send_json_error(['message' => __('You are not allowed to delete this request.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $deleted = $wpdb->delete($table_name, ['id' => $request_id], ['%d']);
+
+        if (!$deleted) {
+            wp_send_json_error(['message' => __('Failed to delete the vacation request.', 'nooralkhalij-hr-system')], 500);
+        }
+
+        wp_send_json_success(['message' => __('Vacation request deleted successfully.', 'nooralkhalij-hr-system')]);
+    }
+
+    public static function ajax_update_vacation_status(): void
+    {
+        check_ajax_referer('nak_hr_vacation_modal', 'nonce');
+
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => __('You must be logged in.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        $user = wp_get_current_user();
+
+        if (!in_array('nak_master', (array) $user->roles, true)) {
+            wp_send_json_error(['message' => __('Only master users can change vacation status.', 'nooralkhalij-hr-system')], 403);
+        }
+
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'nak_vacation_requests';
+        $request_id = absint($_POST['request_id'] ?? 0);
+        $status = sanitize_key($_POST['status'] ?? '');
+
+        if ($request_id <= 0) {
+            wp_send_json_error(['message' => __('Invalid request.', 'nooralkhalij-hr-system')], 422);
+        }
+
+        if (!array_key_exists($status, self::get_vacation_statuses())) {
+            wp_send_json_error(['message' => __('Please choose a valid status.', 'nooralkhalij-hr-system')], 422);
+        }
+
+        $updated = $wpdb->update($table_name, ['status' => $status], ['id' => $request_id], ['%s'], ['%d']);
+
+        if ($updated === false) {
+            wp_send_json_error(['message' => __('Failed to update vacation status.', 'nooralkhalij-hr-system')], 500);
+        }
+
+        wp_send_json_success([
+            'message' => __('Vacation status updated successfully.', 'nooralkhalij-hr-system'),
+            'statusLabel' => self::get_vacation_status_label($status),
+        ]);
     }
 
     private static function render_careers(): void
@@ -1581,5 +1863,134 @@ class Dashboard_Shortcode
             </div>
         </div>
         <?php
+    }
+
+    private static function render_vacation_form(): void
+    {
+        ?>
+        <div class="nak-hr-careers-modal__content nak-hr-wiki-modal-content">
+            <button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button>
+            <h3><?php esc_html_e('Add Vacation Request', 'nooralkhalij-hr-system'); ?></h3>
+
+            <form class="nak-hr-auth-form" data-vacation-form>
+                <input type="hidden" name="action" value="nak_hr_save_vacation_request">
+                <input type="hidden" name="nonce" value="<?php echo esc_attr(wp_create_nonce('nak_hr_vacation_modal')); ?>">
+
+                <label>
+                    <span><?php esc_html_e('Vacation type', 'nooralkhalij-hr-system'); ?></span>
+                    <select name="vacation_type" required>
+                        <option value=""><?php esc_html_e('Select type', 'nooralkhalij-hr-system'); ?></option>
+                        <?php foreach (self::get_vacation_types() as $type_key => $type_label): ?>
+                            <option value="<?php echo esc_attr($type_key); ?>"><?php echo esc_html($type_label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+
+                <div class="nak-hr-grid">
+                    <label>
+                        <span><?php esc_html_e('Date from', 'nooralkhalij-hr-system'); ?></span>
+                        <input type="date" name="date_from" required>
+                    </label>
+
+                    <label>
+                        <span><?php esc_html_e('Date to', 'nooralkhalij-hr-system'); ?></span>
+                        <input type="date" name="date_to" required>
+                    </label>
+                </div>
+
+                <label>
+                    <span><?php esc_html_e('Additional info', 'nooralkhalij-hr-system'); ?></span>
+                    <textarea name="additional_info" rows="4" placeholder="<?php esc_attr_e('Optional details', 'nooralkhalij-hr-system'); ?>"></textarea>
+                </label>
+
+                <div class="nak-hr-careers-apply-feedback" data-vacation-feedback></div>
+                <div class="nak-hr-modal-actions">
+                    <button type="submit"><?php esc_html_e('Submit Request', 'nooralkhalij-hr-system'); ?></button>
+                    <button type="button" class="nak-hr-action-button nak-hr-action-button--secondary" data-careers-close><?php esc_html_e('Cancel', 'nooralkhalij-hr-system'); ?></button>
+                </div>
+            </form>
+        </div>
+        <?php
+    }
+
+    private static function get_vacation_types(): array
+    {
+        $types = [];
+
+        foreach (self::VACATION_TYPES as $type_key => $label) {
+            $types[$type_key] = __($label, 'nooralkhalij-hr-system');
+        }
+
+        return $types;
+    }
+
+    private static function get_vacation_statuses(): array
+    {
+        $statuses = [];
+
+        foreach (self::VACATION_STATUSES as $status_key => $label) {
+            $statuses[$status_key] = __($label, 'nooralkhalij-hr-system');
+        }
+
+        return $statuses;
+    }
+
+    private static function get_vacation_type_label(string $type): string
+    {
+        $types = self::get_vacation_types();
+
+        return $types[$type] ?? ucfirst(str_replace('-', ' ', $type));
+    }
+
+    private static function get_vacation_status_label(string $status): string
+    {
+        $statuses = self::get_vacation_statuses();
+
+        return $statuses[$status] ?? ucfirst(str_replace('-', ' ', $status));
+    }
+
+    private static function is_valid_date(string $date): bool
+    {
+        if ($date === '') {
+            return false;
+        }
+
+        $parsed = date_create($date);
+
+        return $parsed instanceof \DateTimeInterface && $parsed->format('Y-m-d') === $date;
+    }
+
+    private static function send_vacation_request_notification(\WP_User $user, string $vacation_type, string $date_from, string $date_to, string $additional_info): void
+    {
+        $emails_raw = (string) get_option('nak_hr_notification_emails', '');
+        $emails = preg_split('/[\r\n,;]+/', $emails_raw) ?: [];
+        $recipients = [];
+
+        foreach ($emails as $email) {
+            $email = sanitize_email(trim($email));
+
+            if ($email !== '' && is_email($email)) {
+                $recipients[] = $email;
+            }
+        }
+
+        $recipients = array_values(array_unique($recipients));
+
+        if (empty($recipients)) {
+            return;
+        }
+
+        $subject = sprintf(__('New vacation request from %s', 'nooralkhalij-hr-system'), $user->display_name ?: $user->user_login);
+        $message = sprintf(
+            "Employee: %s\nEmail: %s\nType: %s\nFrom: %s\nTo: %s\n\nAdditional info:\n%s",
+            $user->display_name ?: $user->user_login,
+            $user->user_email,
+            self::get_vacation_type_label($vacation_type),
+            $date_from,
+            $date_to,
+            $additional_info !== '' ? $additional_info : __('No additional info provided.', 'nooralkhalij-hr-system')
+        );
+
+        wp_mail($recipients, $subject, $message);
     }
 }

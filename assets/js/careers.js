@@ -49,6 +49,8 @@ document.addEventListener('click', async (event) => {
   const wikiDelete = event.target.closest('[data-wiki-delete]');
   const careerFormOpen = event.target.closest('[data-career-form-open]');
   const employeeFormOpen = event.target.closest('[data-employee-form-open]');
+  const vacationFormOpen = event.target.closest('[data-vacation-form-open]');
+  const vacationDelete = event.target.closest('[data-vacation-delete]');
   const close = event.target.closest('[data-careers-close]');
   const backdrop = event.target.classList.contains('nak-hr-careers-modal');
 
@@ -123,6 +125,70 @@ document.addEventListener('click', async (event) => {
     } catch (error) {
       modal.querySelector('.nak-hr-careers-modal__dialog').innerHTML = '<div class="nak-hr-careers-modal__content"><button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button><p>' + error.message + '</p></div>';
     }
+    return;
+  }
+
+  if (vacationFormOpen) {
+    const ajaxUrl = vacationFormOpen.getAttribute('data-ajax-url');
+    const nonce = vacationFormOpen.getAttribute('data-nonce');
+
+    if (!ajaxUrl || !nonce) return;
+
+    const modal = await nakHrOpenModal('<div class="nak-hr-careers-modal__loading">Loading...</div>');
+
+    try {
+      const response = await fetch(ajaxUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        },
+        body: new URLSearchParams({
+          action: 'nak_hr_get_vacation_form',
+          nonce,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!payload.success) {
+        throw new Error(payload?.data?.message || 'Failed to load vacation form.');
+      }
+
+      modal.querySelector('.nak-hr-careers-modal__dialog').innerHTML = payload.data.html;
+    } catch (error) {
+      modal.querySelector('.nak-hr-careers-modal__dialog').innerHTML = '<div class="nak-hr-careers-modal__content"><button type="button" class="nak-hr-careers-modal__close" data-careers-close>&times;</button><p>' + error.message + '</p></div>';
+    }
+    return;
+  }
+
+  if (vacationDelete) {
+    const requestId = vacationDelete.getAttribute('data-request-id');
+    const ajaxUrl = vacationDelete.getAttribute('data-ajax-url');
+    const nonce = vacationDelete.getAttribute('data-nonce');
+
+    if (!requestId || !ajaxUrl || !nonce) return;
+    if (!window.confirm('Delete this vacation request?')) return;
+
+    const response = await fetch(ajaxUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      },
+      body: new URLSearchParams({
+        action: 'nak_hr_delete_vacation_request',
+        nonce,
+        request_id: requestId,
+      }),
+    });
+
+    const payload = await response.json();
+
+    if (!payload.success) {
+      window.alert(payload?.data?.message || 'Failed to delete vacation request.');
+      return;
+    }
+
+    window.location.reload();
     return;
   }
 
@@ -237,6 +303,102 @@ document.addEventListener('submit', async (event) => {
   const careerManageForm = event.target.closest('[data-career-manage-form]');
   const employeeManageForm = event.target.closest('[data-employee-manage-form]');
   const quizPopupForm = event.target.closest('[data-quiz-popup-form]');
+  const vacationForm = event.target.closest('[data-vacation-form]');
+  const vacationStatusForm = event.target.closest('[data-vacation-status-form]');
+
+  if (vacationStatusForm) {
+    event.preventDefault();
+
+    const formData = new FormData(vacationStatusForm);
+    const ajaxUrl = document.querySelector('[data-vacation-form-open][data-ajax-url]')?.getAttribute('data-ajax-url');
+    const submitButton = vacationStatusForm.querySelector('button[type="submit"]');
+
+    if (!ajaxUrl) return;
+
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+
+    try {
+      const response = await fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!payload.success) {
+        throw new Error(payload?.data?.message || 'Failed to update vacation status.');
+      }
+
+      window.location.reload();
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+    }
+    return;
+  }
+
+  if (vacationForm) {
+    event.preventDefault();
+
+    const feedback = vacationForm.querySelector('[data-vacation-feedback]');
+    const submitButton = vacationForm.querySelector('button[type="submit"]');
+    const formData = new FormData(vacationForm);
+    const ajaxUrl = document.querySelector('[data-vacation-form-open][data-ajax-url]')?.getAttribute('data-ajax-url');
+
+    if (!ajaxUrl) return;
+
+    if (feedback) {
+      feedback.textContent = 'Submitting...';
+      feedback.className = 'nak-hr-careers-apply-feedback';
+    }
+
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.setAttribute('disabled', 'disabled');
+      submitButton.setAttribute('aria-disabled', 'true');
+      submitButton.classList.add('is-disabled');
+    }
+
+    try {
+      const response = await fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const payload = await response.json();
+
+      if (!payload.success) {
+        throw new Error(payload?.data?.message || 'Failed to submit vacation request.');
+      }
+
+      if (feedback) {
+        feedback.textContent = payload.data.message;
+        feedback.className = 'nak-hr-careers-apply-feedback is-success';
+      }
+
+      window.setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      if (feedback) {
+        feedback.textContent = error.message;
+        feedback.className = 'nak-hr-careers-apply-feedback is-error';
+      }
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.removeAttribute('disabled');
+        submitButton.removeAttribute('aria-disabled');
+        submitButton.classList.remove('is-disabled');
+      }
+    }
+    return;
+  }
 
   if (quizPopupForm) {
     event.preventDefault();

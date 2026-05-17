@@ -121,15 +121,18 @@ class Admin
             $questions_per_popup = max(1, min(10, absint($_POST['nak_hr_questions_per_popup'] ?? 1)));
             $quiz_interval_minutes = max(0, absint($_POST['nak_hr_quiz_interval_minutes'] ?? 0));
             $session_expiry_minutes = max(0, absint($_POST['nak_hr_session_expiry_minutes'] ?? 0));
+            $hr_notification_emails = sanitize_textarea_field($_POST['nak_hr_notification_emails'] ?? '');
             update_option('nak_hr_questions_per_popup', $questions_per_popup);
             update_option('nak_hr_quiz_interval_minutes', $quiz_interval_minutes);
             update_option('nak_hr_session_expiry_minutes', $session_expiry_minutes);
+            update_option('nak_hr_notification_emails', $hr_notification_emails);
             echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__('Settings saved.', 'nooralkhalij-hr-system') . '</p></div>';
         }
 
         $questions_per_popup = (int) get_option('nak_hr_questions_per_popup', 1);
         $quiz_interval_minutes = (int) get_option('nak_hr_quiz_interval_minutes', 0);
         $session_expiry_minutes = (int) get_option('nak_hr_session_expiry_minutes', 0);
+        $hr_notification_emails = (string) get_option('nak_hr_notification_emails', '');
         ?>
         <div class="wrap">
             <h1><?php esc_html_e('Noor Al Khalij HR System', 'nooralkhalij-hr-system'); ?></h1>
@@ -177,6 +180,17 @@ class Admin
                     style="width: 120px; margin-bottom: 12px;"
                 >
                 <p style="margin-top: 0; color: #50575e;"><?php esc_html_e('0 means use the default WordPress session duration.', 'nooralkhalij-hr-system'); ?></p>
+
+                <label for="nak_hr_notification_emails" style="display: block; margin: 8px 0; font-weight: 600;"><?php esc_html_e('HR notification emails', 'nooralkhalij-hr-system'); ?></label>
+                <textarea
+                    id="nak_hr_notification_emails"
+                    name="nak_hr_notification_emails"
+                    rows="4"
+                    style="width: 100%; margin-bottom: 12px;"
+                    placeholder="hr@example.com, manager@example.com"
+                ><?php echo esc_textarea($hr_notification_emails); ?></textarea>
+                <p style="margin-top: 0; color: #50575e;"><?php esc_html_e('Comma or line separated emails that should receive new vacation request notifications.', 'nooralkhalij-hr-system'); ?></p>
+
                 <div>
                     <button type="submit" class="button button-primary"><?php esc_html_e('Save Settings', 'nooralkhalij-hr-system'); ?></button>
                 </div>

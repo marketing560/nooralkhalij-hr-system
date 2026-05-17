@@ -69,6 +69,7 @@ class Plugin
         $quiz_table = $wpdb->prefix . 'nak_quiz_questions';
         $careers_table = $wpdb->prefix . 'nak_careers';
         $applications_table = $wpdb->prefix . 'nak_career_applications';
+        $vacations_table = $wpdb->prefix . 'nak_vacation_requests';
 
         $quiz_sql = "CREATE TABLE {$quiz_table} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -108,9 +109,26 @@ class Plugin
             KEY idx_email (email)
         ) {$charset_collate};";
 
+        $vacations_sql = "CREATE TABLE {$vacations_table} (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            user_id BIGINT UNSIGNED NOT NULL,
+            vacation_type VARCHAR(100) NOT NULL,
+            date_from DATE NOT NULL,
+            date_to DATE NOT NULL,
+            additional_info LONGTEXT NULL,
+            status VARCHAR(50) NOT NULL DEFAULT 'pending',
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY idx_user_id (user_id),
+            KEY idx_date_from (date_from),
+            KEY idx_date_to (date_to),
+            KEY idx_status (status)
+        ) {$charset_collate};";
+
         dbDelta($quiz_sql);
         dbDelta($careers_sql);
         dbDelta($applications_sql);
+        dbDelta($vacations_sql);
     }
 
     public static function create_required_pages(): void
@@ -187,6 +205,10 @@ class Plugin
         add_action('wp_ajax_nak_hr_save_employee', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_employee']);
         add_action('wp_ajax_nak_hr_get_quiz_popup', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_quiz_popup']);
         add_action('wp_ajax_nak_hr_submit_quiz_popup', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_submit_quiz_popup']);
+        add_action('wp_ajax_nak_hr_get_vacation_form', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_get_vacation_form']);
+        add_action('wp_ajax_nak_hr_save_vacation_request', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_save_vacation_request']);
+        add_action('wp_ajax_nak_hr_delete_vacation_request', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_delete_vacation_request']);
+        add_action('wp_ajax_nak_hr_update_vacation_status', ['\\NoorAlKhalij\\HRSystem\\Dashboard_Shortcode', 'ajax_update_vacation_status']);
     }
 
     public function register_shortcodes(): void
